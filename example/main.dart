@@ -9,9 +9,9 @@ void main() async {
   final meta = prompt.metadata; // the model info, settings, etc.
   final result = prompt.render({'name': 'Chris'});
 
-  print('# Metadata');
+  print('\n# Metadata');
   print(const JsonEncoder.withIndent('  ').convert(meta));
 
-  print('# Result');
+  print('\n# Result');
   print(result);
 }
