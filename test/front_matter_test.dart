@@ -13,16 +13,16 @@ void main() {
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.name, isNull);
-        expect(prompt.metadata.model, isNull);
+        expect(prompt.frontMatter.name, isNull);
+        expect(prompt.frontMatter.model, isNull);
         expect(prompt.template, equals('Template content'));
       });
 
       test('handles missing frontmatter', () {
         const input = 'Template content';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.name, isNull);
-        expect(prompt.metadata.model, isNull);
+        expect(prompt.frontMatter.name, isNull);
+        expect(prompt.frontMatter.model, isNull);
         expect(prompt.template, equals('Template content'));
       });
 
@@ -37,8 +37,9 @@ myext.multiline: |
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.name, 'test');
-        expect(prompt.metadata.ext['myext']['multiline'], 'Line 1\nLine 2');
+        expect(prompt.frontMatter.name, 'test');
+        // ignore: avoid_dynamic_calls
+        expect(prompt.frontMatter.ext['myext']['multiline'], 'Line 1\nLine 2');
       });
 
       test('handles malformed YAML gracefully', () {
@@ -68,7 +69,7 @@ name: testPrompt
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.name, 'testPrompt');
+        expect(prompt.frontMatter.name, 'testPrompt');
       });
 
       test('handles model field', () {
@@ -79,7 +80,7 @@ model: gemini-2.0-pro
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.model, 'gemini-2.0-pro');
+        expect(prompt.frontMatter.model, 'gemini-2.0-pro');
       });
 
       test('handles tools array correctly', () {
@@ -94,7 +95,7 @@ Template content
 ''';
         final prompt = DotPrompt.fromString(input);
         expect(
-          prompt.metadata.tools,
+          prompt.frontMatter.tools,
           equals(['timeOfDay', 'weather', 'calendar']),
         );
       });
@@ -114,14 +115,14 @@ Template content
 ''';
         final prompt = DotPrompt.fromString(input);
         expect(
-          prompt.metadata.config['version'],
+          prompt.frontMatter.config['version'],
           equals('gemini-1.5-flash-latest'),
         );
-        expect(prompt.metadata.config['temperature'], equals(0.7));
-        expect(prompt.metadata.config['topK'], equals(20));
-        expect(prompt.metadata.config['topP'], equals(0.8));
+        expect(prompt.frontMatter.config['temperature'], equals(0.7));
+        expect(prompt.frontMatter.config['topK'], equals(20));
+        expect(prompt.frontMatter.config['topP'], equals(0.8));
         expect(
-          prompt.metadata.config['stopSequences'],
+          prompt.frontMatter.config['stopSequences'],
           equals(['STOPSTOPSTOP']),
         );
       });
@@ -145,10 +146,11 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.inputSchema, isNotNull);
-        expect(prompt.metadata.inputSchema!['type'], 'object');
+        expect(prompt.frontMatter.inputSchema, isNotNull);
+        expect(prompt.frontMatter.inputSchema!['type'], 'object');
         expect(
-          prompt.metadata.inputSchema!['properties']['name']['type'],
+          // ignore: avoid_dynamic_calls
+          prompt.frontMatter.inputSchema!['properties']['name']['type'],
           'string',
         );
       });
@@ -167,10 +169,11 @@ output:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.outputSchema, isNotNull);
-        expect(prompt.metadata.outputSchema!['type'], 'object');
+        expect(prompt.frontMatter.outputSchema, isNotNull);
+        expect(prompt.frontMatter.outputSchema!['type'], 'object');
         expect(
-          prompt.metadata.outputSchema!['properties']['greeting']['type'],
+          // ignore: avoid_dynamic_calls
+          prompt.frontMatter.outputSchema!['properties']['greeting']['type'],
           'string',
         );
       });
@@ -187,9 +190,9 @@ output:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.inputDefaults, isEmpty);
-        expect(prompt.metadata.inputSchema, isEmpty);
-        expect(prompt.metadata.outputSchema, isEmpty);
+        expect(prompt.frontMatter.inputDefaults, isEmpty);
+        expect(prompt.frontMatter.inputSchema, isEmpty);
+        expect(prompt.frontMatter.outputSchema, isEmpty);
       });
     });
 
@@ -206,9 +209,11 @@ myext.nested.field: value
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.metadata.name, 'test');
-        expect(prompt.metadata.ext['myext']['level'], 1);
-        expect(prompt.metadata.ext['myext']['nested']['field'], 'value');
+        expect(prompt.frontMatter.name, 'test');
+        // ignore: avoid_dynamic_calls
+        expect(prompt.frontMatter.ext['myext']['level'], 1);
+        // ignore: avoid_dynamic_calls
+        expect(prompt.frontMatter.ext['myext']['nested']['field'], 'value');
       });
 
       test('rejects non-namespaced custom fields', () {

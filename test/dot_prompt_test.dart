@@ -12,16 +12,18 @@ void main() {
       dotPrompt = await DotPrompt.fromFile(promptPath);
     });
 
-    test('loads prompt metadata and template', () {
-      expect(dotPrompt.metadata.name, 'greet');
+    test('loads prompt front matter and template', () {
+      expect(dotPrompt.frontMatter.name, 'greet');
       expect(
-        dotPrompt.metadata.ext['myext']['description'],
+        // ignore: avoid_dynamic_calls
+        dotPrompt.frontMatter.ext['myext']['description'],
         'A simple greeting prompt',
       );
-      expect(dotPrompt.metadata.model, 'gemini-2.0-pro');
-      expect(dotPrompt.metadata.ext['myext']['temperature'], 0.7);
-      expect(dotPrompt.metadata.inputSchema, isNotNull);
-      expect(dotPrompt.metadata.outputSchema, isNotNull);
+      expect(dotPrompt.frontMatter.model, 'gemini-2.0-pro');
+      // ignore: avoid_dynamic_calls
+      expect(dotPrompt.frontMatter.ext['myext']['temperature'], 0.7);
+      expect(dotPrompt.frontMatter.inputSchema, isNotNull);
+      expect(dotPrompt.frontMatter.outputSchema, isNotNull);
       expect(dotPrompt.template, contains('Hello {{name}}!'));
     });
 
@@ -37,15 +39,17 @@ void main() {
       final output = dotPrompt.render({'name': 'Chris'});
       expect(output, contains('Hello Chris!'));
 
-      expect(dotPrompt.metadata.name, 'greet');
+      expect(dotPrompt.frontMatter.name, 'greet');
       expect(
-        dotPrompt.metadata.ext['myext']['description'],
+        // ignore: avoid_dynamic_calls
+        dotPrompt.frontMatter.ext['myext']['description'],
         'A simple greeting prompt',
       );
-      expect(dotPrompt.metadata.model, 'gemini-2.0-pro');
-      expect(dotPrompt.metadata.ext['myext']['temperature'], 0.7);
-      expect(dotPrompt.metadata.inputSchema, isNotNull);
-      expect(dotPrompt.metadata.outputSchema, isNotNull);
+      expect(dotPrompt.frontMatter.model, 'gemini-2.0-pro');
+      // ignore: avoid_dynamic_calls
+      expect(dotPrompt.frontMatter.ext['myext']['temperature'], 0.7);
+      expect(dotPrompt.frontMatter.inputSchema, isNotNull);
+      expect(dotPrompt.frontMatter.outputSchema, isNotNull);
       expect(dotPrompt.template, contains('Hello {{name}}!'));
     });
   });
