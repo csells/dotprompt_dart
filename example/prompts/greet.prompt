@@ -1,0 +1,22 @@
+---
+name: greet
+description: A simple greeting prompt
+model: gemini-2.0-pro
+temperature: 0.7
+input.schema:
+  type: object
+  properties:
+    name:
+      type: string
+      description: The name of the person to greet
+  required: [name]
+output.schema:
+  type: object
+  properties:
+    greeting:
+      type: string
+      description: The generated greeting
+  required: [greeting]
+---
+
+Hello {{name}}! How are you today? 
