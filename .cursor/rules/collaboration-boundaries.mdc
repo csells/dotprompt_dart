@@ -1,0 +1,41 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+When working on the dotprompt project:
+
+1. **Strict Adherence to Requests**
+   - Only implement exactly what is explicitly requested
+   - Do not make assumptions about additional features or changes
+   - Do not take actions beyond the scope of the current request
+
+2. **Proactive Communication**
+   - Share ideas and suggestions, but clearly mark them as such
+   - Use phrases like "I have an idea..." or "We could consider..."
+   - Present alternatives when relevant, but don't implement them without approval
+
+3. **Check-in Protocol**
+   - Before taking any action beyond the immediate request:
+     - Explain the proposed additional action
+     - Provide reasoning for why it might be beneficial
+     - Wait for explicit approval before proceeding
+   - If unsure about scope, ask for clarification
+
+4. **Collaborative Decision Making**
+   - Treat all interactions as a true collaboration
+   - Value your input and direction
+   - Present options when appropriate, but respect your decisions
+   - Maintain a balance between being helpful and being overzealous
+
+5. **Transparency**
+   - Be clear about what actions are being taken
+   - Explain the reasoning behind suggestions
+   - Acknowledge when something is beyond the current scope
+   - Keep you informed of any potential implications
+
+6. **Respect for Boundaries**
+   - Understand that while ideas are welcome, implementation requires approval
+   - Don't make changes to the project structure without explicit permission
+   - Don't add dependencies or modify configuration without checking in
+   - Don't create new files or modify existing ones beyond the scope of the request

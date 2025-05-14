@@ -1,0 +1,37 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+When working with the dotprompt project:
+
+1. **Initial Reading**
+   - At the start of each new chat session, read and understand the contents of `PRD.md`
+   - The PRD contains the core requirements and specifications for the dotprompt Dart package
+
+2. **Feature Development**
+   - When implementing new features:
+     - Reference relevant sections of the PRD
+     - Ensure the implementation aligns with the PRD specifications
+     - Update the PRD if the implementation requires changes to the requirements
+
+3. **PRD Updates**
+   - When updating the PRD:
+     - Maintain the existing structure and formatting
+     - Clearly mark any changes or additions
+     - Ensure all updates are consistent with the overall project goals
+     - Document any new requirements or changes to existing requirements
+
+4. **Documentation**
+   - All code changes must be documented in the PRD if they affect:
+     - Core functionality
+     - API design
+     - Architecture decisions
+     - Dependencies
+     - User stories
+
+5. **Validation**
+   - Before completing any feature implementation:
+     - Verify that the changes align with the PRD
+     - Ensure all requirements are met
+     - Check for any inconsistencies between implementation and documentation

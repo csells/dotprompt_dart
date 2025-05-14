@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Before taking any action in the dotprompt project:
+
+1. **Initial Assessment**
+   - Verify understanding of the current state and requirements
+   - Check if all necessary context is available
+   - Confirm if any additional information is needed
+
+2. **Planning Phase**
+   - Outline the proposed approach before implementation
+   - List all required steps and dependencies
+   - Identify potential risks or edge cases
+   - Consider alternative solutions
+
+3. **Validation Steps**
+   - Verify that the proposed solution aligns with:
+     - Project requirements in PRD.md
+     - Existing codebase patterns
+     - Best practices for Dart/Flutter
+   - Check for any potential conflicts with existing functionality
+   - Ensure all dependencies are properly considered
+
+4. **Documentation Check**
+   - Review relevant documentation
+   - Check if the proposed changes require documentation updates
+   - Ensure all changes will be properly documented
+
+5. **Implementation Strategy**
+   - Break down the implementation into clear, manageable steps
+   - Identify which files will be affected
+   - Plan for testing and validation
+   - Consider rollback strategy if needed
+
+6. **Communication**
+   - Clearly explain the planned approach
+   - Highlight any assumptions or dependencies
+   - Ask for clarification if anything is unclear
+   - Provide reasoning for chosen approach
+
+7. **Execution**
+   - Only proceed with implementation after validation
+   - Make changes incrementally where possible
+   - Verify each step before moving to the next
+   - Document any deviations from the plan
