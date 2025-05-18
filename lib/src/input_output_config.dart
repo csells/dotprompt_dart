@@ -1,36 +1,37 @@
+import 'dart:developer' as dev;
+
 import 'package:json_schema/json_schema.dart';
 
 import 'pico_schema.dart';
-import 'utility.dart';
 
 /// Base class for configuration with schema handling.
 abstract class BaseConfig {
   /// Creates a new instance of [BaseConfig].
   BaseConfig({Map<String, dynamic>? schema})
     : _schema =
-          schema != null && schema.isNotEmpty
-              ? JsonSchema.create(() {
-                final dartSchema = yamlToMap(schema) as Map<String, dynamic>;
-                return PicoSchema.isPicoSchema(dartSchema)
-                    ? PicoSchema(dartSchema).expand()
-                    : dartSchema;
-              }())
-              : null;
+          schema != null && schema.isNotEmpty ? _getJsonSchema(schema) : null;
 
   final JsonSchema? _schema;
 
   /// The JSON Schema for the configuration.
   JsonSchema? get schema => _schema;
+
+  static JsonSchema? _getJsonSchema(Map<String, dynamic> schema) {
+    final map =
+        PicoSchema.isPicoSchema(schema) ? PicoSchema(schema).expand() : schema;
+    dev.log('Schema being passed to JsonSchema.create: $map');
+    return JsonSchema.create(map);
+  }
 }
 
 /// Configuration for input handling in a .prompt file.
 class InputConfig extends BaseConfig {
   /// Creates a new instance of [InputConfig].
-  InputConfig({super.schema, Map<String, dynamic>? defaultValues})
-    : defaultValues = defaultValues ?? {};
+  InputConfig({super.schema, Map<String, dynamic>? defaults})
+    : defaults = defaults ?? {};
 
   /// Default values for the input.
-  final Map<String, dynamic> defaultValues;
+  final Map<String, dynamic> defaults;
 }
 
 /// Configuration for output handling in a .prompt file.

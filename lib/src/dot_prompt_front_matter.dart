@@ -21,7 +21,7 @@ class DotPromptFrontMatter {
   }) : config = config ?? {},
        input = InputConfig(
          schema: input?['schema'] as Map<String, dynamic>?,
-         defaultValues: input?['default'] as Map<String, dynamic>?,
+         defaults: input?['default'] as Map<String, dynamic>?,
        ),
        output = OutputConfig(
          schema: output?['schema'] as Map<String, dynamic>?,
@@ -32,12 +32,9 @@ class DotPromptFrontMatter {
 
   /// Creates metadata from a YAML map.
   factory DotPromptFrontMatter.fromMap(Map<String, dynamic> map) {
-    // Convert any YamlMap values to regular Maps
-    final convertedMap = yamlToMap(map) as Map<String, dynamic>;
-
     // Extract namespaced fields
     final ext = <String, dynamic>{};
-    final data = Map<String, dynamic>.from(convertedMap);
+    final data = Map<String, dynamic>.from(map);
     data.removeWhere((key, value) {
       if (key.contains('.')) {
         final parts = key.split('.');
@@ -183,10 +180,10 @@ class DotPromptFrontMatter {
     }
 
     if (config.isNotEmpty) buffer.writeln('config: ${encoder.convert(config)}');
-    if (input.schema != null || input.defaultValues.isNotEmpty) {
+    if (input.schema != null || input.defaults.isNotEmpty) {
       buffer.writeln(
         // ignore: lines_longer_than_80_chars
-        'input: ${encoder.convert({if (input.schema != null) 'schema': input.schema, if (input.defaultValues.isNotEmpty) 'default': input.defaultValues})}',
+        'input: ${encoder.convert({if (input.schema != null) 'schema': input.schema, if (input.defaults.isNotEmpty) 'default': input.defaults})}',
       );
     }
     if (output.schema != null || output.format != 'text') {

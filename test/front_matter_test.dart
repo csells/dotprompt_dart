@@ -202,7 +202,7 @@ output:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.frontMatter.input.defaultValues, isEmpty);
+        expect(prompt.frontMatter.input.defaults, isEmpty);
         expect(isSchemaEmpty(prompt.frontMatter.input.schema), isTrue);
         expect(isSchemaEmpty(prompt.frontMatter.output.schema), isTrue);
       });
@@ -273,8 +273,8 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.frontMatter.input.defaultValues['name'], 'Guest');
-        expect(prompt.frontMatter.input.defaultValues['language'], 'en');
+        expect(prompt.frontMatter.input.defaults['name'], 'Guest');
+        expect(prompt.frontMatter.input.defaults['language'], 'en');
       });
     });
 

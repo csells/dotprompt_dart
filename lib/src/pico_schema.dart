@@ -19,10 +19,27 @@ class PicoSchema {
     if (schema.containsKey('properties')) {
       final properties = schema['properties'] as Map<String, dynamic>;
       for (final entry in properties.entries) {
-        // If any property key contains PicoSchema features, it's PicoSchema shorthand
+        // If any property key contains PicoSchema features, it's PicoSchema
+        // shorthand
         if (entry.key.contains('?') || entry.key.contains('(')) return true;
-        // If any property value is a string, it's PicoSchema shorthand
-        if (entry.value is String) return true;
+        // If any property value is a string with a comma (type, description) or
+        // a simple type name
+        if (entry.value is String) {
+          final str = entry.value as String;
+          if (str.contains(',') ||
+              [
+                'string',
+                'number',
+                'integer',
+                'boolean',
+                'null',
+                'object',
+                'array',
+                'any',
+              ].contains(str.trim())) {
+            return true;
+          }
+        }
         // Recursively check nested properties
         if (entry.value is Map<String, dynamic>) {
           if (isPicoSchema(entry.value as Map<String, dynamic>)) return true;
@@ -36,7 +53,22 @@ class PicoSchema {
     // Check for wildcard in additionalProperties
     if (schema.containsKey('additionalProperties')) {
       final additionalProperties = schema['additionalProperties'];
-      if (additionalProperties is String) return true;
+      if (additionalProperties is String) {
+        final str = additionalProperties;
+        if (str.contains(',') ||
+            [
+              'string',
+              'number',
+              'integer',
+              'boolean',
+              'null',
+              'object',
+              'array',
+              'any',
+            ].contains(str.trim())) {
+          return true;
+        }
+      }
       if (additionalProperties is Map<String, dynamic>) {
         return isPicoSchema(additionalProperties);
       }
@@ -45,7 +77,22 @@ class PicoSchema {
     // Check items for PicoSchema features
     if (schema.containsKey('items')) {
       final items = schema['items'];
-      if (items is String) return true;
+      if (items is String) {
+        final str = items;
+        if (str.contains(',') ||
+            [
+              'string',
+              'number',
+              'integer',
+              'boolean',
+              'null',
+              'object',
+              'array',
+              'any',
+            ].contains(str.trim())) {
+          return true;
+        }
+      }
       if (items is Map<String, dynamic>) {
         return isPicoSchema(items);
       }
