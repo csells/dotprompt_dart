@@ -426,7 +426,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       items(array, Empty array): string
 ---

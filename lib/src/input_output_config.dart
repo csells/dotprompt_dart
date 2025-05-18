@@ -17,10 +17,17 @@ abstract class BaseConfig {
   JsonSchema? get schema => _schema;
 
   static JsonSchema? _getJsonSchema(Map<String, dynamic> schema) {
+    final type = pico.PicoSchema.schemaType(schema);
+    if (type == pico.SchemaType.unknown) {
+      throw const FormatException(
+        'Schema must be valid JSON Schema or PicoSchema',
+      );
+    }
     final map =
-        pico.PicoSchema.schemaType(schema) == pico.SchemaType.picoSchema
+        type == pico.SchemaType.picoSchema
             ? pico.PicoSchema(schema).expand()
             : schema;
+    print('DEBUG: Schema being passed to JsonSchema.create: $map');
     dev.log('Schema being passed to JsonSchema.create: $map');
     return JsonSchema.create(map);
   }

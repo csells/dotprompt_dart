@@ -17,6 +17,7 @@ class PicoSchema {
   /// Creates a new instance of [PicoSchema].
   /// Throws [FormatException] if the schema is not a valid PicoSchema.
   PicoSchema(this.schema) {
+    print('DEBUG: PicoSchema constructor received schema: \\$schema');
     if (schemaType(schema) != SchemaType.picoSchema) {
       throw const FormatException('Schema is not a valid pico schema');
     }
@@ -134,6 +135,7 @@ class PicoSchema {
 
   /// Returns a valid JSON Schema map, expanding PicoSchema if needed.
   static Map<String, dynamic> _getJsonSchema(Map<String, dynamic> map) {
+    print('DEBUG: _getJsonSchema received map: \\$map');
     final type = schemaType(map);
     if (type == SchemaType.picoSchema) {
       return PicoSchema(map).expand();
@@ -144,6 +146,7 @@ class PicoSchema {
   /// Expands PicoSchema shorthand into valid JSON Schema.
   /// If the input is already valid JSON Schema, it is passed through unchanged.
   Map<String, dynamic> expand() {
+    print('DEBUG: Input schema to expand: \\$schema');
     dev.log('Input schema: $schema'); // Debug log
 
     // Recursively check every map for invalid wildcard field syntax
@@ -238,7 +241,7 @@ class PicoSchema {
           if (!['array', 'object', 'enum'].contains(parenMatch.group(2))) {
             throw FormatException(
               'Invalid parenthetical type in PicoSchema: '
-              '${parenMatch.group(2)}',
+              '[31m${parenMatch.group(2)}[0m',
             );
           }
           normalizedKey = parenMatch.group(1)!.trim();
@@ -246,6 +249,43 @@ class PicoSchema {
           picoDescription = parenMatch.group(3)?.trim();
         } else {
           normalizedKey = keyWithoutOptional.trim();
+        }
+
+        // ARRAY HANDLING: handle at the top level, not inside if (value is Map)
+        if (picoType == 'array') {
+          if (value is String) {
+            // handle shorthand
+            final parts = value.split(',');
+            final itemType = parts[0].trim();
+            final itemDescription = parts.length > 1 ? parts[1].trim() : null;
+            formattedProperties[normalizedKey] = {
+              'type': 'array',
+              'items': {
+                'type': itemType,
+                if (itemDescription != null) 'description': itemDescription,
+              },
+              if (picoDescription != null) 'description': picoDescription,
+            };
+            print(
+              'DEBUG: Assigned array property for $normalizedKey: \\${formattedProperties[normalizedKey]}',
+            );
+            return;
+          } else if (value is Map<String, dynamic>) {
+            // handle nested object
+            formattedProperties[normalizedKey] = {
+              'type': 'array',
+              'items': PicoSchema({'properties': value}).expand(),
+              if (picoDescription != null) 'description': picoDescription,
+            };
+            return;
+          } else {
+            formattedProperties[normalizedKey] = {
+              'type': 'array',
+              'items': value,
+              if (picoDescription != null) 'description': picoDescription,
+            };
+            return;
+          }
         }
 
         if (value is Map) {
@@ -263,76 +303,7 @@ class PicoSchema {
             }
           }
           // Recursively format nested properties and ensure wildcard expansion
-          var nested = _getJsonSchema(Map<String, dynamic>.from(value));
-          // If the nested schema contains only a (*) key (and maybe
-          // description), transform it
-          if (nested.keys.where((k) => k != 'description').length == 1 &&
-              nested.containsKey('(*)')) {
-            final wildcard = nested.remove('(*)');
-            Map<String, dynamic>? wildcardSchema;
-            if (wildcard is String) {
-              final parts = wildcard.split(',');
-              final type = parts[0].trim();
-              final description = parts.length > 1 ? parts[1].trim() : null;
-              if (type == 'any') {
-                wildcardSchema = {};
-                if (description != null) {
-                  wildcardSchema['description'] = description;
-                }
-              } else {
-                wildcardSchema = {
-                  'type': type,
-                  if (description != null) 'description': description,
-                };
-              }
-            } else if (wildcard is Map) {
-              wildcardSchema = _getJsonSchema(
-                Map<String, dynamic>.from(wildcard),
-              );
-            }
-            if (wildcardSchema != null) {
-              if (wildcardSchema.isEmpty) {
-                nested = {
-                  'type': 'object',
-                  'additionalProperties': true,
-                  if (nested['description'] != null)
-                    'description': nested['description'],
-                };
-              } else {
-                if (!wildcardSchema.containsKey('type')) {
-                  wildcardSchema['type'] = 'object';
-                }
-                nested = {
-                  'type': 'object',
-                  'additionalProperties': wildcardSchema,
-                  if (nested['description'] != null)
-                    'description': nested['description'],
-                };
-              }
-            }
-          }
-          // Always preserve description if present
-          if (picoDescription != null && !nested.containsKey('description')) {
-            nested['description'] = picoDescription;
-          }
-          if (picoType == 'array') {
-            // This is an array of objects (or other types)
-            final arrayDesc = picoDescription;
-            // Ensure nested has type: object if it's a map and type is not set
-            if (!nested.containsKey('type')) {
-              // Filter out 'description' and other non-property keys
-              final filtered = Map<String, dynamic>.from(nested)
-                ..remove('description');
-              // Recursively expand the nested PicoSchema shorthand
-              nested = PicoSchema({'properties': filtered}).expand();
-            }
-            formattedProperties[normalizedKey] = {
-              'type': 'array',
-              'items': nested,
-              if (arrayDesc != null) 'description': arrayDesc,
-            };
-            return;
-          }
+          final nested = Map<String, dynamic>.from(value);
           if (optional) {
             // For optional nested objects/arrays, ensure type/typeList is correct
             if (nested.containsKey('type')) {
@@ -375,35 +346,6 @@ class PicoSchema {
           final description = parts.length > 1 ? parts[1].trim() : null;
 
           // Use PicoSchema features if present
-          if (picoType == 'array') {
-            final arrayDesc = picoDescription ?? description;
-            if (type == 'any') {
-              // Special case: array of any type
-              formattedProperties[normalizedKey] = {
-                'type': 'array',
-                'items': {},
-                if (arrayDesc != null) 'description': arrayDesc,
-              };
-              return;
-            }
-            final itemType = type;
-            final itemsSchema = {'type': itemType};
-            if (optional) {
-              formattedProperties[normalizedKey] = {
-                'type': 'array',
-                'typeList': ['array', 'null'],
-                'items': itemsSchema,
-                if (arrayDesc != null) 'description': arrayDesc,
-              };
-            } else {
-              formattedProperties[normalizedKey] = {
-                'type': 'array',
-                'items': itemsSchema,
-                if (arrayDesc != null) 'description': arrayDesc,
-              };
-            }
-            return;
-          }
           if (picoType == 'object') {
             final objectDesc = picoDescription ?? description;
             if (optional) {
@@ -612,6 +554,10 @@ class PicoSchema {
     }
 
     dev.log('Final expanded schema: $formatted'); // Debug log
+    print('DEBUG: Final expanded schema: \\$formatted');
+    if (formatted.containsKey('items')) {
+      print('DEBUG: Final items property: \\${formatted['items']}');
+    }
     return formatted;
   }
 }
