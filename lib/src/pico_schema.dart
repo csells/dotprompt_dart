@@ -19,10 +19,14 @@ class PicoSchema {
     if (schema.containsKey('properties')) {
       final properties = schema['properties'] as Map<String, dynamic>;
       for (final entry in properties.entries) {
+        // If any property key contains PicoSchema features, it's PicoSchema shorthand
+        if (entry.key.contains('?') || entry.key.contains('(')) return true;
         // If any property value is a string, it's PicoSchema shorthand
         if (entry.value is String) return true;
-        // If any property key contains ? or (, it's PicoSchema shorthand
-        if (entry.key.contains('?') || entry.key.contains('(')) return true;
+        // Recursively check nested properties
+        if (entry.value is Map<String, dynamic>) {
+          if (isPicoSchema(entry.value as Map<String, dynamic>)) return true;
+        }
       }
     }
 
@@ -49,6 +53,10 @@ class PicoSchema {
 
     return false;
   }
+
+  /// Returns a valid JSON Schema map, expanding PicoSchema if needed.
+  static Map<String, dynamic> _getJsonSchema(Map<String, dynamic> map) =>
+      isPicoSchema(map) ? PicoSchema(map).expand() : map;
 
   /// Expands PicoSchema shorthand into valid JSON Schema.
   /// If the input is already valid JSON Schema, it is passed through unchanged.
@@ -126,7 +134,7 @@ class PicoSchema {
                 );
               }
             }
-            wildcardSchema = PicoSchema(nestedMap).expand();
+            wildcardSchema = _getJsonSchema(nestedMap);
           }
           // Do not add to formattedProperties
           return;
@@ -172,7 +180,7 @@ class PicoSchema {
             }
           }
           // Recursively format nested properties and ensure wildcard expansion
-          var nested = PicoSchema(Map<String, dynamic>.from(value)).expand();
+          var nested = _getJsonSchema(Map<String, dynamic>.from(value));
           // If the nested schema contains only a (*) key (and maybe
           // description), transform it
           if (nested.keys.where((k) => k != 'description').length == 1 &&
@@ -195,8 +203,9 @@ class PicoSchema {
                 };
               }
             } else if (wildcard is Map) {
-              wildcardSchema =
-                  PicoSchema(Map<String, dynamic>.from(wildcard)).expand();
+              wildcardSchema = _getJsonSchema(
+                Map<String, dynamic>.from(wildcard),
+              );
             }
             if (wildcardSchema != null) {
               if (wildcardSchema.isEmpty) {
@@ -463,8 +472,9 @@ class PicoSchema {
     // Handle arrays
     if (formatted.containsKey('items')) {
       if (formatted['items'] is Map) {
-        formatted['items'] =
-            PicoSchema(Map<String, dynamic>.from(formatted['items'])).expand();
+        formatted['items'] = _getJsonSchema(
+          Map<String, dynamic>.from(formatted['items']),
+        );
       } else if (formatted['items'] is String) {
         // Handle simple type string for items
         formatted['items'] = {'type': formatted['items']};
@@ -474,10 +484,9 @@ class PicoSchema {
     // Handle additional properties
     if (formatted.containsKey('additionalProperties')) {
       if (formatted['additionalProperties'] is Map) {
-        formatted['additionalProperties'] =
-            PicoSchema(
-              Map<String, dynamic>.from(formatted['additionalProperties']),
-            ).expand();
+        formatted['additionalProperties'] = _getJsonSchema(
+          Map<String, dynamic>.from(formatted['additionalProperties']),
+        );
       } else if (formatted['additionalProperties'] is String) {
         final type = formatted['additionalProperties'] as String;
         formatted['additionalProperties'] = {

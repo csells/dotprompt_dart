@@ -560,9 +560,7 @@ input:
   schema:
     type: object
     properties:
-      empty(object, Empty object):
-        type: object
-        properties: {}
+      empty(object, Empty object): object
 ---
 Template content
 ''';
