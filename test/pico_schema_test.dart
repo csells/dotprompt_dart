@@ -357,18 +357,20 @@ Template content
 ''';
         final prompt = DotPrompt.fromString(input);
         final schema = prompt.frontMatter.input.schema;
+        // Debug output before assertions
+        print('Expanded schema: \\${schema?.toJson()}');
+        print(
+          'metadata property schema: \\${schema?.properties['metadata']?.toJson()}',
+        );
         expect(schema, isNotNull);
         expect(schema!.typeName, 'object');
         expect(schema.properties['metadata'], isNotNull);
         expect(schema.properties['metadata']!.typeName, 'object');
-        expect(
-          schema.properties['metadata']?.additionalPropertiesSchema,
-          isNotNull,
-        );
-        expect(
-          schema.properties['metadata']!.additionalPropertiesSchema!.typeName,
-          'string',
-        );
+
+        final additionalPropertiesSchema =
+            schema.properties['metadata']?.additionalPropertiesSchema;
+        expect(additionalPropertiesSchema, isA<JsonSchema>());
+        expect(additionalPropertiesSchema?.typeName, 'string');
       });
 
       test('handles wildcard any fields', () {
@@ -392,9 +394,7 @@ Template content
 
         final additionalPropertiesSchema =
             schema.properties['metadata']?.additionalPropertiesSchema;
-        final isMap = additionalPropertiesSchema is Map;
-        final isEmpty = isMap && (additionalPropertiesSchema! as Map).isEmpty;
-        expect(isEmpty, isTrue);
+        expect(additionalPropertiesSchema, isNull);
       });
     });
 

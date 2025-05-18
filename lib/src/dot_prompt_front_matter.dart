@@ -27,6 +27,8 @@ class InputConfig {
   /// Expands PicoSchema shorthand into valid JSON Schema.
   /// If the input is already valid JSON Schema, it is passed through unchanged.
   static Map<String, dynamic> _expandPicoSchema(Map<String, dynamic> schema) {
+    dev.log('Input schema: $schema'); // Debug log
+
     // Check if this is already valid JSON Schema
     var isAlreadyJsonSchema = true;
 
@@ -48,6 +50,7 @@ class InputConfig {
     }
 
     if (isAlreadyJsonSchema) {
+      dev.log('Passing through standard JSON Schema: $schema'); // Debug log
       return schema; // Pass through standard JSON Schema unchanged
     }
 
@@ -75,6 +78,7 @@ class InputConfig {
       Map<String, dynamic>? wildcardSchema;
 
       properties.forEach((key, value) {
+        dev.log('Processing property: $key = $value'); // Debug log
         // Handle wildcard fields: (*)
         if (key.trim() == '(*)') {
           // Expand the wildcard schema
@@ -94,6 +98,7 @@ class InputConfig {
                 if (description != null) 'description': description,
               };
             }
+            dev.log('Created wildcard schema: $wildcardSchema'); // Debug log
           } else if (value is Map) {
             wildcardSchema = _expandPicoSchema(
               Map<String, dynamic>.from(value),
@@ -102,6 +107,7 @@ class InputConfig {
           // Do not add to formattedProperties
           return;
         }
+
         // Parse PicoSchema features from the original key
         final optional = key.endsWith('?');
         final keyWithoutOptional =
@@ -128,8 +134,54 @@ class InputConfig {
         }
 
         if (value is Map) {
-          // Recursively format nested properties
-          final nested = _expandPicoSchema(Map<String, dynamic>.from(value));
+          // Recursively format nested properties and ensure wildcard expansion
+          var nested = _expandPicoSchema(Map<String, dynamic>.from(value));
+          // If the nested schema contains only a (*) key (and maybe description), transform it
+          if (nested.keys.where((k) => k != 'description').length == 1 &&
+              nested.containsKey('(*)')) {
+            final wildcard = nested.remove('(*)');
+            Map<String, dynamic>? wildcardSchema;
+            if (wildcard is String) {
+              final parts = wildcard.split(',');
+              final type = parts[0].trim();
+              final description = parts.length > 1 ? parts[1].trim() : null;
+              if (type == 'any') {
+                wildcardSchema = {};
+                if (description != null) {
+                  wildcardSchema['description'] = description;
+                }
+              } else {
+                wildcardSchema = {
+                  'type': type,
+                  if (description != null) 'description': description,
+                };
+              }
+            } else if (wildcard is Map) {
+              wildcardSchema = _expandPicoSchema(
+                Map<String, dynamic>.from(wildcard),
+              );
+            }
+            if (wildcardSchema != null) {
+              if (wildcardSchema.isEmpty) {
+                nested = {
+                  'type': 'object',
+                  'additionalProperties': true,
+                  if (nested['description'] != null)
+                    'description': nested['description'],
+                };
+              } else {
+                if (!wildcardSchema.containsKey('type')) {
+                  wildcardSchema['type'] = 'object';
+                }
+                nested = {
+                  'type': 'object',
+                  'additionalProperties': wildcardSchema,
+                  if (nested['description'] != null)
+                    'description': nested['description'],
+                };
+              }
+            }
+          }
           // Always preserve description if present
           if (picoDescription != null && !nested.containsKey('description')) {
             nested['description'] = picoDescription;
@@ -162,6 +214,7 @@ class InputConfig {
             }
           }
           formattedProperties[normalizedKey] = nested;
+          return;
         } else if (value is List && picoType == 'enum') {
           // Handle enum values as YAML list
           final enumDesc = picoDescription;
@@ -334,13 +387,30 @@ class InputConfig {
 
       formatted['properties'] = formattedProperties;
       if (wildcardSchema != null) {
-        // Ensure type is set for additionalProperties
+        // For 'any', set additionalProperties to true (bool)
         if (wildcardSchema is Map<String, dynamic>) {
-          if (!wildcardSchema!.containsKey('type')) {
-            wildcardSchema!['type'] = 'object';
+          final ws = wildcardSchema!;
+          if (ws.isEmpty) {
+            formatted['additionalProperties'] = true;
+            dev.log('Set additionalProperties: true (for any)'); // Debug log
+          } else {
+            if (!ws.containsKey('type')) {
+              ws['type'] = 'object';
+            }
+            formatted['additionalProperties'] = ws;
+            dev.log(
+              'Set additionalProperties: ${formatted['additionalProperties']}',
+            ); // Debug log
           }
+        } else if (wildcardSchema is bool) {
+          formatted['additionalProperties'] = wildcardSchema;
         }
-        formatted['additionalProperties'] = wildcardSchema;
+        // If this object is only a wildcard, ensure type: object and remove (*)
+        if (!formatted.containsKey('type')) {
+          formatted['type'] = 'object';
+        }
+        // Remove any lingering (*) key
+        formatted.remove('(*)');
       }
     }
 
@@ -380,8 +450,39 @@ class InputConfig {
       }
     }
 
-    dev.log('Expanded PicoSchema: $formatted'); // Debug print
+    dev.log('Final expanded schema: $formatted'); // Debug log
     return formatted;
+  }
+
+  static Map<String, dynamic> _prepareSchemaForJsonSchema(
+    Map<String, dynamic> schema,
+  ) {
+    // If additionalProperties is a map, ensure it's a valid schema map
+    if (schema.containsKey('additionalProperties') &&
+        schema['additionalProperties'] is Map<String, dynamic>) {
+      // Recursively prepare additionalProperties
+      schema['additionalProperties'] = _prepareSchemaForJsonSchema(
+        Map<String, dynamic>.from(schema['additionalProperties']),
+      );
+    }
+    // If properties exist, recursively prepare them
+    if (schema.containsKey('properties')) {
+      final props = schema['properties'] as Map<String, dynamic>;
+      schema['properties'] = props.map((k, v) {
+        if (v is Map<String, dynamic>) {
+          return MapEntry(k, _prepareSchemaForJsonSchema(v));
+        }
+        return MapEntry(k, v);
+      });
+    }
+    // If items exist and is a map, recursively prepare
+    if (schema.containsKey('items') &&
+        schema['items'] is Map<String, dynamic>) {
+      schema['items'] = _prepareSchemaForJsonSchema(
+        Map<String, dynamic>.from(schema['items']),
+      );
+    }
+    return schema;
   }
 }
 
