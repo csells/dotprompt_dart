@@ -96,17 +96,23 @@ The following template features are not yet implemented but planned for future r
   config, tools, output, context).  
 * Support core config keys—`temperature`, `maxOutputTokens`, `topK`, `topP`,
   `stopSequences`—passed through unchanged to the underlying model.  
+* Handle input validation and defaults in a specific order:
+  1. Merge default values from input configuration with provided input data
+  2. Input values take precedence over defaults when merging
+  3. Validate the merged data against the compiled JSON Schema
+  4. If validation fails, throw a `ValidationException` with detailed error messages
+  5. After validation passes, use the merged data for template rendering
 * Provide a simple call to load from files and strings, e.g. here for files:
 
 ```dart
 final greet = await DotPrompt.fromFile('prompts/greet.prompt');
 final meta = greet.metadata; // the model info, settings, etc.
-final prompt = greet.render({'name': 'Chris'}); // the expanded prompt string
+final prompt = greet.render({'name': 'Chris'}); // validates input and expands the prompt string
 
 // TODO: use something like dartantic_ai to create an Agent and run the prompt
 ```  
 
-These calls performs schema validation, template rendering and model settings.
+These calls perform schema validation, template rendering and model settings.
 
 ### Typed Code Generation using a Builder (future)
 * `build_runner` scans `*.prompt` files and emits a Dart class per prompt:  

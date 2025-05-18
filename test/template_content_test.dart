@@ -586,7 +586,7 @@ input:
       name:
         type: string
       greeting:
-        type: string
+        type: ["string", "null"]
 ---
 {{#greeting}}{{greeting}} {{/greeting}}{{name}}!''';
         final dotPrompt = DotPrompt.fromString(promptString);
@@ -682,6 +682,163 @@ input:
         expect(
           () => DotPrompt.fromString(promptString).render({}),
           throwsA(isA<TemplateException>()),
+        );
+      });
+    });
+
+    group('Input Validation and Defaults', () {
+      test('validates input against schema', () {
+        const promptString = '''
+---
+name: test_validation
+input:
+  schema:
+    type: object
+    properties:
+      age:
+        type: integer
+        minimum: 0
+        maximum: 120
+    required: [age]
+---
+Age: {{age}}''';
+        final dotPrompt = DotPrompt.fromString(promptString);
+
+        // Valid input
+        expect(dotPrompt.render({'age': 25}), equals('Age: 25'));
+
+        // Invalid input - wrong type
+        expect(
+          () => dotPrompt.render({'age': 'not a number'}),
+          throwsA(isA<ValidationException>()),
+        );
+
+        // Invalid input - out of range
+        expect(
+          () => dotPrompt.render({'age': 150}),
+          throwsA(isA<ValidationException>()),
+        );
+
+        // Invalid input - missing required field
+        expect(() => dotPrompt.render({}), throwsA(isA<ValidationException>()));
+      });
+
+      test('applies defaults for missing values', () {
+        const promptString = '''
+---
+name: test_defaults
+input:
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+      greeting:
+        type: ["string", "null"]
+  default:
+    greeting: "Hello"
+---
+{{greeting}} {{name}}!''';
+        final dotPrompt = DotPrompt.fromString(promptString);
+
+        // Without providing greeting
+        expect(dotPrompt.render({'name': 'World'}), equals('Hello World!'));
+
+        // Overriding default
+        expect(
+          dotPrompt.render({'name': 'World', 'greeting': 'Hi'}),
+          equals('Hi World!'),
+        );
+      });
+
+      test('validates input with defaults against schema', () {
+        const promptString = '''
+---
+name: test_validation_with_defaults
+input:
+  schema:
+    type: object
+    properties:
+      age:
+        type: integer
+        minimum: 0
+      name:
+        type: string
+    required: [age, name]
+  default:
+    age: 18
+---
+{{name}} is {{age}} years old.''';
+        final dotPrompt = DotPrompt.fromString(promptString);
+
+        // Using default age
+        expect(
+          dotPrompt.render({'name': 'John'}),
+          equals('John is 18 years old.'),
+        );
+
+        // Invalid override of default
+        expect(
+          () => dotPrompt.render({'name': 'John', 'age': -1}),
+          throwsA(isA<ValidationException>()),
+        );
+
+        // Missing required field not in defaults
+        expect(
+          () => dotPrompt.render({'age': 25}),
+          throwsA(isA<ValidationException>()),
+        );
+      });
+
+      test('complex nested defaults', () {
+        const promptString = '''
+---
+name: test_nested_defaults
+input:
+  schema:
+    type: object
+    properties:
+      user:
+        type: object
+        properties:
+          name:
+            type: string
+          settings:
+            type: object
+            properties:
+              theme:
+                type: string
+              notifications:
+                type: boolean
+  default:
+    user:
+      settings:
+        theme: "light"
+        notifications: true
+---
+{{user.name}} prefers {{user.settings.theme}} theme.''';
+        final dotPrompt = DotPrompt.fromString(promptString);
+
+        // Using nested defaults
+        expect(
+          dotPrompt.render({
+            'user': {
+              'name': 'John',
+              'settings': {'theme': 'light'},
+            },
+          }),
+          equals('John prefers light theme.'),
+        );
+
+        // Partial override of defaults
+        expect(
+          dotPrompt.render({
+            'user': {
+              'name': 'John',
+              'settings': {'theme': 'dark'},
+            },
+          }),
+          equals('John prefers dark theme.'),
         );
       });
     });

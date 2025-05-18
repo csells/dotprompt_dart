@@ -8,6 +8,22 @@ import 'package:yaml/yaml.dart';
 import 'dot_prompt_front_matter.dart';
 import 'utility.dart';
 
+/// Exception thrown when input data fails schema validation.
+class ValidationException implements Exception {
+  /// Creates a validation exception with an error message and list of
+  /// validation errors.
+  ValidationException(this.message, this.errors);
+
+  /// The error message describing the validation failure.
+  final String message;
+
+  /// The list of specific validation error messages.
+  final List<String> errors;
+
+  @override
+  String toString() => '$message: ${errors.join(', ')}';
+}
+
 /// The main class for working with .prompt files.
 class DotPrompt {
   DotPrompt._({required this.frontMatter, required String template})
@@ -92,5 +108,23 @@ class DotPrompt {
   final Template _template;
 
   /// Renders the template with the given input data.
-  String render(Map<String, dynamic> input) => _template.renderString(input);
+  /// Throws [ValidationException] if the input data fails schema validation.
+  String render(Map<String, dynamic> input) {
+    // Merge defaults with input, letting input override defaults
+    final mergedInput = Map<String, dynamic>.from(frontMatter.input.defaults);
+    mergedInput.addAll(input);
+
+    // Validate merged input against schema if one exists
+    if (frontMatter.input.schema != null) {
+      final results = frontMatter.input.schema!.validate(mergedInput);
+      if (!results.isValid) {
+        throw ValidationException(
+          'Input data failed schema validation',
+          results.errors.map((e) => e.message).toList(),
+        );
+      }
+    }
+
+    return _template.renderString(mergedInput);
+  }
 }
