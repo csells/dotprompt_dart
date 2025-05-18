@@ -2,7 +2,6 @@
 
 import 'dart:convert';
 
-import 'package:collection/collection.dart';
 import 'package:dotprompt/dot_prompt.dart';
 import 'package:json_schema/json_schema.dart';
 import 'package:test/test.dart';
@@ -36,9 +35,6 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final inputSchema =
-            jsonDecode(prompt.frontMatter.input.schema!.toJson())
-                as Map<String, dynamic>;
 
         final expectedSchema = {
           'type': 'object',
@@ -48,11 +44,11 @@ Template content
           },
         };
 
-        expect(
-          const DeepCollectionEquality().equals(inputSchema, expectedSchema),
-          isTrue,
-          reason: 'Generated schema does not match expected schema',
-        );
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
 
       test('handles number type', () {
