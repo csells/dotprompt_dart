@@ -61,7 +61,34 @@ plug‑in, non‑Dart runtimes.
 * The content can be parsed using the
   [mustache_template](https://pub.dev/packages/mustache_template) package.
 * Allow registration of custom helpers at runtime; retain full fidelity with
-  Handlebars blocks and partials.  
+  Handlebars blocks and partials.
+
+The following template features are not yet implemented but planned for future releases:
+
+1. Built-in Helpers ([spec](https://google.github.io/dotprompt/reference/template/#built-in-helpers)):
+   * `#if` conditional blocks
+   * `else` blocks
+   * `#unless` blocks
+   * `#each` iteration with `@index`, `@first`, `@last` support
+
+2. Dotprompt Helpers ([spec](https://google.github.io/dotprompt/reference/template/#dotprompt-helpers)):
+   * `json` helper for JSON serialization
+   * `role` helper for multi-message prompts
+   * `history` helper for conversation context
+   * `media` helper for image content
+   * `section` helper for content positioning
+
+3. Custom Helpers ([spec](https://google.github.io/dotprompt/reference/template/#custom-helpers)):
+   * Basic helpers with positional args
+   * Named argument support
+   * Block helpers
+   * Context access
+   * Error handling
+
+4. Context Variables ([spec](https://google.github.io/dotprompt/reference/template/#context-variables)):
+   * `@metadata` access to prompt configuration
+   * `@root` context reference
+   * Message history access via `@metadata.messages`
 
 ### Execution Model  
 * Convert parsed prompt into a `GenerateRequest` object matching the [model

@@ -1,6 +1,6 @@
 name: dotprompt
-description: A Dart package for executing .prompt files with LLMs.
-version: 1.0.0
+description: A Dart package for parsing .prompt files for use with LLMs.
+version: 0.1.0
 repository: https://github.com/csells/dotprompt
 
 environment:
@@ -11,10 +11,8 @@ dependencies:
   json_schema: ^5.2.1
   mustache_template: ^2.0.0
   path: ^1.8.0
-  petitparser: ^6.1.0
   yaml: ^3.1.2
 
 dev_dependencies:
   all_lint_rules_community: ^0.0.43
-  lints: ^5.0.0
   test: ^1.24.0

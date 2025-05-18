@@ -21,15 +21,6 @@ class PicoSchema {
     if (schemaType(schema) != SchemaType.picoSchema) {
       throw const FormatException('Schema is not a valid pico schema');
     }
-
-    // final parser = PicoschemaParser();
-    // final result = parser.parse(jsonEncode(schema));
-    // if (result.isSuccess) {
-    //   final root = result.value as ObjectField;
-    //   dev.log(root.pretty());
-    // } else {
-    //   dev.log(result.message);
-    // }
   }
 
   /// The schema to expand.
