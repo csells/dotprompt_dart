@@ -108,9 +108,9 @@ void main() async {
 
 The package provides flexible schema validation through two approaches:
 
-### PicoSchema
+### Pico Schema
 
-PicoSchema is a simplified, YAML-friendly schema syntax that is automatically
+Pico Schema is a simplified, YAML-friendly schema syntax that is automatically
 converted to JSON Schema. You can use it for more readable schema definitions:
 
 ```yaml
