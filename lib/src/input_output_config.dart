@@ -2,7 +2,7 @@ import 'dart:developer' as dev;
 
 import 'package:json_schema/json_schema.dart';
 
-import 'pico_schema.dart';
+import 'pico_schema.dart' as pico;
 
 /// Base class for configuration with schema handling.
 abstract class BaseConfig {
@@ -18,7 +18,9 @@ abstract class BaseConfig {
 
   static JsonSchema? _getJsonSchema(Map<String, dynamic> schema) {
     final map =
-        PicoSchema.isPicoSchema(schema) ? PicoSchema(schema).expand() : schema;
+        pico.PicoSchema.schemaType(schema) == pico.SchemaType.picoSchema
+            ? pico.PicoSchema(schema).expand()
+            : schema;
     dev.log('Schema being passed to JsonSchema.create: $map');
     return JsonSchema.create(map);
   }

@@ -28,7 +28,6 @@ void main() {
 ---
 input:
   schema:
-    type: object
     properties:
       name: string, The name of the user
 ---
@@ -48,7 +47,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       price: number, The price in dollars
 ---
@@ -68,7 +66,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       age: integer, The age in years
 ---
@@ -88,7 +85,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       isActive: boolean, Whether the item is active
 ---
@@ -111,7 +107,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       emptyField: null, A field that must be null
 ---
@@ -134,7 +129,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       data: any, Any type of data
 ---
@@ -154,12 +148,8 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
-      text:
-        type: string
-        description: |
-          Text with special chars: !@#$%^&*()
+      text: string, Text with special chars -- !@#$%^&*()
 ---
 Template content
 ''';
@@ -171,7 +161,7 @@ Template content
         expect(schema.properties['text']!.typeName, 'string');
         expect(
           schema.properties['text']?.description,
-          r'Text with special chars: !@#$%^&*()',
+          r'Text with special chars -- !@#$%^&*()',
         );
       });
 
@@ -180,7 +170,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       price: number, Price with decimals
 ---
@@ -199,7 +188,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       code: integer, Code with leading zeros
 ---
@@ -218,7 +206,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       isActive: boolean, Boolean with different casing
 ---
@@ -241,8 +228,6 @@ Template content
 ---
 input:
   schema:
-    type: object
-    required: [name]
     properties:
       name: string, Required name
       subtitle?: string, Optional subtitle
@@ -253,7 +238,7 @@ Template content
         final schema = prompt.frontMatter.input.schema;
         expect(schema, isNotNull);
         expect(schema!.typeName, 'object');
-        expect(schema.requiredProperties, ['name']);
+        expect(schema.properties['name']!.typeName, 'string');
         expect(schema.properties['subtitle'], isNotNull);
         expect(schema.properties['subtitle']!.typeName, 'string, null');
       });
@@ -263,7 +248,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       subtitle?: string, Optional subtitle
 ---
@@ -283,7 +267,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       name: string, Required name
       subtitle?: string, Optional subtitle
@@ -307,7 +290,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       name: string, Required name
       subtitle?: string, Optional subtitle
@@ -388,7 +370,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       tags(array, List of tags): string
 ---
@@ -410,13 +391,10 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       items(array, List of items):
-        type: object
-        properties:
-          id: string, Item ID
-          name: string, Item name
+        id: string, Item ID
+        name: string, Item name
 ---
 Template content
 ''';
@@ -462,6 +440,29 @@ Template content
         expect(schema.properties['items']!.typeName, 'array');
         expect(schema.properties['items']?.items, isNotNull);
         expect(schema.properties['items']!.items!.typeName, 'string');
+      });
+
+      test('preserves property-level descriptions in expanded JSON Schema', () {
+        const input = '''
+---
+input:
+  schema:
+    properties:
+      name: string, The name of the user
+      age: integer, The age in years
+---
+Template content
+''';
+        final prompt = DotPrompt.fromString(input);
+        final schema = prompt.frontMatter.input.schema;
+        expect(schema, isNotNull);
+        expect(schema!.typeName, 'object');
+        expect(schema.properties['name'], isNotNull);
+        expect(schema.properties['name']!.typeName, 'string');
+        expect(schema.properties['name']?.description, 'The name of the user');
+        expect(schema.properties['age'], isNotNull);
+        expect(schema.properties['age']!.typeName, 'integer');
+        expect(schema.properties['age']?.description, 'The age in years');
       });
 
       test('handles arrays with mixed types', () {

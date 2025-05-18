@@ -1,27 +1,54 @@
 import 'dart:developer' as dev;
 
+/// The type of schema being used.
+enum SchemaType {
+  /// Standard JSON Schema format
+  jsonSchema,
+
+  /// Picoschema format
+  picoSchema,
+
+  /// Unknown or invalid schema format
+  unknown,
+}
+
 /// A class for handling PicoSchema expansion and validation.
 class PicoSchema {
   /// Creates a new instance of [PicoSchema].
   /// Throws [FormatException] if the schema is not a valid PicoSchema.
   PicoSchema(this.schema) {
-    if (!isPicoSchema(schema)) {
+    if (schemaType(schema) != SchemaType.picoSchema) {
       throw const FormatException('Schema is not a valid pico schema');
     }
+
+    // final parser = PicoschemaParser();
+    // final result = parser.parse(jsonEncode(schema));
+    // if (result.isSuccess) {
+    //   final root = result.value as ObjectField;
+    //   dev.log(root.pretty());
+    // } else {
+    //   dev.log(result.message);
+    // }
   }
 
   /// The schema to expand.
   final Map<String, dynamic> schema;
 
-  /// Checks if the schema contains PicoSchema features.
-  static bool isPicoSchema(Map<String, dynamic> schema) {
+  /// Determines the type of schema: JSON Schema, Picoschema, or unknown.
+  static SchemaType schemaType(Map<String, dynamic> schema) {
+    // If there's a type property at the top level, it's JSON Schema
+    if (schema.containsKey('type')) return SchemaType.jsonSchema;
+
     // Check properties for PicoSchema features
     if (schema.containsKey('properties')) {
       final properties = schema['properties'] as Map<String, dynamic>;
       for (final entry in properties.entries) {
         // If any property key contains PicoSchema features, it's PicoSchema
         // shorthand
-        if (entry.key.contains('?') || entry.key.contains('(')) return true;
+        if (entry.key.contains('?') || entry.key.contains('(')) {
+          return SchemaType.picoSchema;
+        }
+
         // If any property value is a string with a comma (type, description) or
         // a simple type name
         if (entry.value is String) {
@@ -37,18 +64,19 @@ class PicoSchema {
                 'array',
                 'any',
               ].contains(str.trim())) {
-            return true;
+            return SchemaType.picoSchema;
           }
         }
         // Recursively check nested properties
         if (entry.value is Map<String, dynamic>) {
-          if (isPicoSchema(entry.value as Map<String, dynamic>)) return true;
+          final nestedType = schemaType(entry.value as Map<String, dynamic>);
+          if (nestedType == SchemaType.picoSchema) return SchemaType.picoSchema;
         }
       }
     }
 
     // Check for wildcard fields
-    if (schema.containsKey('(*)')) return true;
+    if (schema.containsKey('(*)')) return SchemaType.picoSchema;
 
     // Check for wildcard in additionalProperties
     if (schema.containsKey('additionalProperties')) {
@@ -66,11 +94,12 @@ class PicoSchema {
               'array',
               'any',
             ].contains(str.trim())) {
-          return true;
+          return SchemaType.picoSchema;
         }
       }
       if (additionalProperties is Map<String, dynamic>) {
-        return isPicoSchema(additionalProperties);
+        final nestedType = schemaType(additionalProperties);
+        if (nestedType == SchemaType.picoSchema) return SchemaType.picoSchema;
       }
     }
 
@@ -90,20 +119,27 @@ class PicoSchema {
               'array',
               'any',
             ].contains(str.trim())) {
-          return true;
+          return SchemaType.picoSchema;
         }
       }
       if (items is Map<String, dynamic>) {
-        return isPicoSchema(items);
+        final nestedType = schemaType(items);
+        if (nestedType == SchemaType.picoSchema) return SchemaType.picoSchema;
       }
     }
 
-    return false;
+    // If we haven't found any clear indicators, return unknown
+    return SchemaType.unknown;
   }
 
   /// Returns a valid JSON Schema map, expanding PicoSchema if needed.
-  static Map<String, dynamic> _getJsonSchema(Map<String, dynamic> map) =>
-      isPicoSchema(map) ? PicoSchema(map).expand() : map;
+  static Map<String, dynamic> _getJsonSchema(Map<String, dynamic> map) {
+    final type = schemaType(map);
+    if (type == SchemaType.picoSchema) {
+      return PicoSchema(map).expand();
+    }
+    return map;
+  }
 
   /// Expands PicoSchema shorthand into valid JSON Schema.
   /// If the input is already valid JSON Schema, it is passed through unchanged.
@@ -282,6 +318,14 @@ class PicoSchema {
           if (picoType == 'array') {
             // This is an array of objects (or other types)
             final arrayDesc = picoDescription;
+            // Ensure nested has type: object if it's a map and type is not set
+            if (!nested.containsKey('type')) {
+              // Filter out 'description' and other non-property keys
+              final filtered = Map<String, dynamic>.from(nested)
+                ..remove('description');
+              // Recursively expand the nested PicoSchema shorthand
+              nested = PicoSchema({'properties': filtered}).expand();
+            }
             formattedProperties[normalizedKey] = {
               'type': 'array',
               'items': nested,
