@@ -1,5 +1,14 @@
 import 'package:dotprompt/dot_prompt.dart';
+import 'package:json_schema/json_schema.dart';
 import 'package:test/test.dart';
+
+import 'test_utility.dart';
+
+bool isSchemaEmpty(JsonSchema? schema) {
+  if (schema == null) return true;
+  if (schema.type == null && (schema.properties.isEmpty)) return true;
+  return false;
+}
 
 void main() {
   group('Frontmatter', () {
@@ -146,11 +155,11 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.frontMatter.inputSchema, isNotNull);
-        expect(prompt.frontMatter.inputSchema!['type'], 'object');
+        expect(prompt.frontMatter.input.schema, isNotNull);
+        expect(prompt.frontMatter.input.schema!.typeName, 'object');
+        expect(prompt.frontMatter.input.schema?.properties['name'], isNotNull);
         expect(
-          // ignore: avoid_dynamic_calls
-          prompt.frontMatter.inputSchema!['properties']['name']['type'],
+          prompt.frontMatter.input.schema!.properties['name']!.typeName,
           'string',
         );
       });
@@ -169,11 +178,14 @@ output:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.frontMatter.outputSchema, isNotNull);
-        expect(prompt.frontMatter.outputSchema!['type'], 'object');
+        expect(prompt.frontMatter.output.schema, isNotNull);
+        expect(prompt.frontMatter.output.schema!.typeName, 'object');
         expect(
-          // ignore: avoid_dynamic_calls
-          prompt.frontMatter.outputSchema!['properties']['greeting']['type'],
+          prompt.frontMatter.output.schema!.properties['greeting'],
+          isNotNull,
+        );
+        expect(
+          prompt.frontMatter.output.schema!.properties['greeting']!.typeName,
           'string',
         );
       });
@@ -190,9 +202,9 @@ output:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.frontMatter.inputDefaults, isEmpty);
-        expect(prompt.frontMatter.inputSchema, isEmpty);
-        expect(prompt.frontMatter.outputSchema, isEmpty);
+        expect(prompt.frontMatter.input.default_, isEmpty);
+        expect(isSchemaEmpty(prompt.frontMatter.input.schema), isTrue);
+        expect(isSchemaEmpty(prompt.frontMatter.output.schema), isTrue);
       });
     });
 
@@ -261,8 +273,8 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.frontMatter.inputDefaults!['name'], 'Guest');
-        expect(prompt.frontMatter.inputDefaults!['language'], 'en');
+        expect(prompt.frontMatter.input.default_['name'], 'Guest');
+        expect(prompt.frontMatter.input.default_['language'], 'en');
       });
     });
 
@@ -278,7 +290,7 @@ output:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.frontMatter.outputFormat, 'json');
+        expect(prompt.frontMatter.output.format, 'json');
       });
 
       test('defaults to text format when not specified', () {
@@ -289,7 +301,7 @@ output: {}
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        expect(prompt.frontMatter.outputFormat, 'text');
+        expect(prompt.frontMatter.output.format, 'text');
       });
     });
 

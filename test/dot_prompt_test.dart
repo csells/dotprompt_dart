@@ -22,8 +22,8 @@ void main() {
       expect(dotPrompt.frontMatter.model, 'gemini-2.0-pro');
       // ignore: avoid_dynamic_calls
       expect(dotPrompt.frontMatter.ext['myext']['temperature'], 0.7);
-      expect(dotPrompt.frontMatter.inputSchema, isNotNull);
-      expect(dotPrompt.frontMatter.outputSchema, isNotNull);
+      expect(dotPrompt.frontMatter.input.schema, isNotNull);
+      expect(dotPrompt.frontMatter.output.schema, isNotNull);
       expect(dotPrompt.template, contains('Hello {{name}}!'));
     });
 
@@ -48,8 +48,8 @@ void main() {
       expect(dotPrompt.frontMatter.model, 'gemini-2.0-pro');
       // ignore: avoid_dynamic_calls
       expect(dotPrompt.frontMatter.ext['myext']['temperature'], 0.7);
-      expect(dotPrompt.frontMatter.inputSchema, isNotNull);
-      expect(dotPrompt.frontMatter.outputSchema, isNotNull);
+      expect(dotPrompt.frontMatter.input.schema, isNotNull);
+      expect(dotPrompt.frontMatter.output.schema, isNotNull);
       expect(dotPrompt.template, contains('Hello {{name}}!'));
     });
   });

@@ -1,8 +1,408 @@
 import 'dart:convert';
+import 'dart:developer' as dev;
 
+import 'package:json_schema/json_schema.dart';
 import 'package:yaml/yaml.dart';
 
 import 'utility.dart';
+
+/// Configuration for input handling in a .prompt file.
+class InputConfig {
+  /// Creates a new instance of [InputConfig].
+  InputConfig({Map<String, dynamic>? schema, Map<String, dynamic>? default_})
+    : _schema =
+          schema != null && schema.isNotEmpty
+              ? JsonSchema.create(_expandPicoSchema(schema))
+              : null,
+      default_ = default_ ?? {};
+
+  final JsonSchema? _schema;
+
+  /// The JSON Schema for the input.
+  JsonSchema? get schema => _schema;
+
+  /// Default values for the input.
+  final Map<String, dynamic> default_;
+
+  /// Expands PicoSchema shorthand into valid JSON Schema.
+  /// If the input is already valid JSON Schema, it is passed through unchanged.
+  static Map<String, dynamic> _expandPicoSchema(Map<String, dynamic> schema) {
+    // Check if this is already valid JSON Schema
+    var isAlreadyJsonSchema = true;
+
+    // Check properties for PicoSchema features
+    if (schema.containsKey('properties')) {
+      final properties = schema['properties'] as Map<String, dynamic>;
+      for (final entry in properties.entries) {
+        // If any property value is a string, it's PicoSchema shorthand
+        if (entry.value is String) {
+          isAlreadyJsonSchema = false;
+          break;
+        }
+        // If any property key contains ? or (, it's PicoSchema shorthand
+        if (entry.key.contains('?') || entry.key.contains('(')) {
+          isAlreadyJsonSchema = false;
+          break;
+        }
+      }
+    }
+
+    if (isAlreadyJsonSchema) {
+      return schema; // Pass through standard JSON Schema unchanged
+    }
+
+    // This is PicoSchema shorthand - expand it
+    final formatted = Map<String, dynamic>.from(schema);
+
+    // Ensure type is a string
+    if (formatted.containsKey('type')) {
+      if (formatted['type'] is List) {
+        // For type lists, we'll use typeList instead
+        formatted['typeList'] = (formatted['type'] as List).cast<String>();
+        // Keep the first type as the primary type
+        formatted['type'] = (formatted['type'] as List).first.toString();
+      } else {
+        // For single types, keep as is - JsonSchema.create will convert to
+        // SchemaType
+        formatted['type'] = formatted['type'].toString();
+      }
+    }
+
+    // Format properties
+    if (formatted.containsKey('properties')) {
+      final properties = formatted['properties'] as Map<String, dynamic>;
+      final formattedProperties = <String, dynamic>{};
+      Map<String, dynamic>? wildcardSchema;
+
+      properties.forEach((key, value) {
+        // Handle wildcard fields: (*)
+        if (key.trim() == '(*)') {
+          // Expand the wildcard schema
+          if (value is String) {
+            // e.g. (*): string
+            final parts = value.split(',');
+            final type = parts[0].trim();
+            final description = parts.length > 1 ? parts[1].trim() : null;
+            if (type == 'any') {
+              wildcardSchema = {};
+              if (description != null) {
+                wildcardSchema?['description'] = description;
+              }
+            } else {
+              wildcardSchema = {
+                'type': type,
+                if (description != null) 'description': description,
+              };
+            }
+          } else if (value is Map) {
+            wildcardSchema = _expandPicoSchema(
+              Map<String, dynamic>.from(value),
+            );
+          }
+          // Do not add to formattedProperties
+          return;
+        }
+        // Parse PicoSchema features from the original key
+        final optional = key.endsWith('?');
+        final keyWithoutOptional =
+            optional ? key.substring(0, key.length - 1) : key;
+        final parenMatch = RegExp(
+          r'^(.*?)\(([^,)]+)(?:,\s*(.*?))?\)',
+        ).firstMatch(keyWithoutOptional);
+        String normalizedKey;
+        String? picoType;
+        String? picoDescription;
+        if (parenMatch != null) {
+          // Check for invalid parenthetical types
+          if (!['array', 'object', 'enum'].contains(parenMatch.group(2))) {
+            throw FormatException(
+              'Invalid parenthetical type in PicoSchema: '
+              '${parenMatch.group(2)}',
+            );
+          }
+          normalizedKey = parenMatch.group(1)!.trim();
+          picoType = parenMatch.group(2);
+          picoDescription = parenMatch.group(3)?.trim();
+        } else {
+          normalizedKey = keyWithoutOptional.trim();
+        }
+
+        if (value is Map) {
+          // Recursively format nested properties
+          final nested = _expandPicoSchema(Map<String, dynamic>.from(value));
+          // Always preserve description if present
+          if (picoDescription != null && !nested.containsKey('description')) {
+            nested['description'] = picoDescription;
+          }
+          if (picoType == 'array') {
+            // This is an array of objects (or other types)
+            final arrayDesc = picoDescription;
+            formattedProperties[normalizedKey] = {
+              'type': 'array',
+              'items': nested,
+              if (arrayDesc != null) 'description': arrayDesc,
+            };
+            return;
+          }
+          if (optional) {
+            // For optional nested objects/arrays, ensure type/typeList is correct
+            if (nested.containsKey('type')) {
+              final t = nested['type'];
+              if (nested['type'] is List) {
+                // Already a list, add null if not present
+                final tl = List.from(nested['type']);
+                if (!tl.contains('null')) tl.add('null');
+                nested['type'] = tl;
+              } else {
+                nested['type'] = [t, 'null'];
+              }
+            } else {
+              // If no type is specified, default to object
+              nested['type'] = ['object', 'null'];
+            }
+          }
+          formattedProperties[normalizedKey] = nested;
+        } else if (value is List && picoType == 'enum') {
+          // Handle enum values as YAML list
+          final enumDesc = picoDescription;
+          if (optional) {
+            formattedProperties[normalizedKey] = {
+              'type': ['string', 'null'],
+              'enum': value,
+              if (enumDesc != null) 'description': enumDesc,
+            };
+          } else {
+            formattedProperties[normalizedKey] = {
+              'type': 'string',
+              'enum': value,
+              if (enumDesc != null) 'description': enumDesc,
+            };
+          }
+        } else if (value is String) {
+          // Handle simple type definitions like "string, description"
+          final parts = value.split(',');
+          final type = parts[0].trim();
+          final description = parts.length > 1 ? parts[1].trim() : null;
+
+          // Use PicoSchema features if present
+          if (picoType == 'array') {
+            final arrayDesc = picoDescription ?? description;
+            final itemType = type;
+            final itemsSchema = {'type': itemType};
+            if (optional) {
+              formattedProperties[normalizedKey] = {
+                'type': 'array',
+                'typeList': ['array', 'null'],
+                'items': itemsSchema,
+                if (arrayDesc != null) 'description': arrayDesc,
+              };
+            } else {
+              formattedProperties[normalizedKey] = {
+                'type': 'array',
+                'items': itemsSchema,
+                if (arrayDesc != null) 'description': arrayDesc,
+              };
+            }
+            return;
+          }
+          if (picoType == 'object') {
+            final objectDesc = picoDescription ?? description;
+            if (optional) {
+              formattedProperties[normalizedKey] = {
+                'type': 'object',
+                'typeList': ['object', 'null'],
+                if (objectDesc != null) 'description': objectDesc,
+              };
+            } else {
+              formattedProperties[normalizedKey] = {
+                'type': 'object',
+                if (objectDesc != null) 'description': objectDesc,
+              };
+            }
+            return;
+          }
+          if (picoType == 'enum') {
+            final enumDesc = picoDescription ?? description;
+            if (type.startsWith('[') && type.endsWith(']')) {
+              final enumValues =
+                  type
+                      .substring(1, type.length - 1)
+                      .split(',')
+                      .map((e) => e.trim())
+                      .toList();
+              if (optional) {
+                formattedProperties[normalizedKey] = {
+                  'type': ['string', 'null'],
+                  'enum': enumValues,
+                  if (enumDesc != null) 'description': enumDesc,
+                };
+              } else {
+                formattedProperties[normalizedKey] = {
+                  'type': 'string',
+                  'enum': enumValues,
+                  if (enumDesc != null) 'description': enumDesc,
+                };
+              }
+              return;
+            } else {
+              // Invalid enum syntax
+              throw const FormatException('Invalid enum syntax in PicoSchema');
+            }
+          }
+
+          // Handle special case: 'any'
+          if (type == 'any') {
+            final anyTypes = [
+              'string',
+              'number',
+              'integer',
+              'boolean',
+              'null',
+              'object',
+              'array',
+            ];
+            if (optional) {
+              formattedProperties[normalizedKey] = {
+                'type': 'object',
+                'typeList': anyTypes,
+                if (description != null) 'description': description,
+              };
+            } else {
+              formattedProperties[normalizedKey] = {
+                'type': 'object', // Default to object for 'any'
+                if (description != null) 'description': description,
+              };
+            }
+            return;
+          }
+
+          // Handle enum values (not using (enum) syntax)
+          if (type.startsWith('[') && type.endsWith(']')) {
+            final enumValues =
+                type
+                    .substring(1, type.length - 1)
+                    .split(',')
+                    .map((e) => e.trim())
+                    .toList();
+            if (optional) {
+              formattedProperties[normalizedKey] = {
+                'type': ['string', 'null'],
+                'enum': enumValues,
+                if (description != null) 'description': description,
+              };
+            } else {
+              formattedProperties[normalizedKey] = {
+                'type': 'string',
+                'enum': enumValues,
+                if (description != null) 'description': description,
+              };
+            }
+            return;
+          }
+
+          // Default case: simple type
+          // Validate supported scalar types
+          final supportedTypes = {
+            'string',
+            'number',
+            'integer',
+            'boolean',
+            'null',
+            'object',
+            'array',
+            'any',
+          };
+          if (!supportedTypes.contains(type)) {
+            throw FormatException('Unsupported scalar type: $type');
+          }
+          if (optional) {
+            formattedProperties[normalizedKey] = {
+              'type': [type, 'null'],
+              if (description != null) 'description': description,
+            };
+          } else {
+            formattedProperties[normalizedKey] = {
+              'type': type,
+              if (description != null) 'description': description,
+            };
+          }
+        } else {
+          // If value is not a String, Map, or (for enums) List, it's invalid
+          throw const FormatException('Invalid PicoSchema property value');
+        }
+      });
+
+      formatted['properties'] = formattedProperties;
+      if (wildcardSchema != null) {
+        // Ensure type is set for additionalProperties
+        if (wildcardSchema is Map<String, dynamic>) {
+          if (!wildcardSchema!.containsKey('type')) {
+            wildcardSchema!['type'] = 'object';
+          }
+        }
+        formatted['additionalProperties'] = wildcardSchema;
+      }
+    }
+
+    // Handle arrays
+    if (formatted.containsKey('items')) {
+      if (formatted['items'] is Map) {
+        formatted['items'] = _expandPicoSchema(
+          Map<String, dynamic>.from(formatted['items']),
+        );
+      } else if (formatted['items'] is String) {
+        // Handle simple type string for items
+        formatted['items'] = {'type': formatted['items']};
+      }
+    }
+
+    // Handle additional properties
+    if (formatted.containsKey('additionalProperties')) {
+      if (formatted['additionalProperties'] is Map) {
+        formatted['additionalProperties'] = _expandPicoSchema(
+          Map<String, dynamic>.from(formatted['additionalProperties']),
+        );
+      } else if (formatted['additionalProperties'] is String) {
+        final type = formatted['additionalProperties'] as String;
+        formatted['additionalProperties'] = {
+          'type': type == 'any' ? 'object' : type,
+          if (type == 'any')
+            'typeList': [
+              'string',
+              'number',
+              'integer',
+              'boolean',
+              'null',
+              'object',
+              'array',
+            ],
+        };
+      }
+    }
+
+    dev.log('Expanded PicoSchema: $formatted'); // Debug print
+    return formatted;
+  }
+}
+
+/// Configuration for output handling in a .prompt file.
+class OutputConfig {
+  /// Creates a new instance of [OutputConfig].
+  OutputConfig({Map<String, dynamic>? schema, String? format})
+    : _schema =
+          schema != null && schema.isNotEmpty
+              ? JsonSchema.create(InputConfig._expandPicoSchema(schema))
+              : null,
+      format = format ?? 'text';
+
+  final JsonSchema? _schema;
+
+  /// The JSON Schema for the output.
+  JsonSchema? get schema => _schema;
+
+  /// The format of the output (defaults to 'text').
+  final String format;
+}
 
 /// Represents the properties parsed from a .prompt file's front matter.
 class DotPromptFrontMatter {
@@ -18,8 +418,14 @@ class DotPromptFrontMatter {
     Map<String, dynamic>? metadata,
     Map<String, dynamic>? ext,
   }) : config = config ?? {},
-       input = input ?? {},
-       output = output ?? {},
+       input = InputConfig(
+         schema: input?['schema'] as Map<String, dynamic>?,
+         default_: input?['default'] as Map<String, dynamic>?,
+       ),
+       output = OutputConfig(
+         schema: output?['schema'] as Map<String, dynamic>?,
+         format: output?['format'] as String?,
+       ),
        metadata = metadata ?? {},
        ext = ext ?? {};
 
@@ -118,31 +524,16 @@ class DotPromptFrontMatter {
   final Map<String, dynamic> config;
 
   /// Input configuration including defaults and schema.
-  final Map<String, dynamic> input;
+  final InputConfig input;
 
   /// Output configuration including format and schema.
-  final Map<String, dynamic> output;
+  final OutputConfig output;
 
   /// Arbitrary metadata to be used by code, tools, and libraries.
   final Map<String, dynamic> metadata;
 
   /// Extensions and namespaced fields.
   final Map<String, dynamic> ext;
-
-  /// Gets the input schema.
-  Map<String, dynamic>? get inputSchema =>
-      input['schema'] as Map<String, dynamic>?;
-
-  /// Gets the output schema.
-  Map<String, dynamic>? get outputSchema =>
-      output['schema'] as Map<String, dynamic>?;
-
-  /// Gets the input defaults.
-  Map<String, dynamic>? get inputDefaults =>
-      input['default'] as Map<String, dynamic>?;
-
-  /// Gets the output format.
-  String get outputFormat => output['format'] as String? ?? 'text';
 
   /// Gets a value from the metadata by key.
   dynamic operator [](String key) {
@@ -181,8 +572,18 @@ class DotPromptFrontMatter {
     }
 
     if (config.isNotEmpty) buffer.writeln('config: ${encoder.convert(config)}');
-    if (input.isNotEmpty) buffer.writeln('input: ${encoder.convert(input)}');
-    if (output.isNotEmpty) buffer.writeln('output: ${encoder.convert(output)}');
+    if (input.schema != null || input.default_.isNotEmpty) {
+      buffer.writeln(
+        // ignore: lines_longer_than_80_chars
+        'input: ${encoder.convert({if (input.schema != null) 'schema': input.schema, if (input.default_.isNotEmpty) 'default': input.default_})}',
+      );
+    }
+    if (output.schema != null || output.format != 'text') {
+      buffer.writeln(
+        // ignore: lines_longer_than_80_chars
+        'output: ${encoder.convert({if (output.schema != null) 'schema': output.schema, if (output.format != 'text') 'format': output.format})}',
+      );
+    }
     if (metadata.isNotEmpty) {
       buffer.writeln('metadata: ${encoder.convert(metadata)}');
     }
