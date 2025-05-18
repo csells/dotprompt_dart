@@ -1,4 +1,4 @@
-import 'package:dotprompt/dot_prompt.dart';
+import 'package:dotprompt_dart/dotprompt_dart.dart';
 import 'package:mustache_template/mustache_template.dart'
     show TemplateException;
 import 'package:test/test.dart';

@@ -1,6 +1,6 @@
 // ignore_for_file: avoid_print
 
-import 'package:dotprompt/dot_prompt.dart';
+import 'package:dotprompt_dart/dotprompt_dart.dart';
 
 void main() async {
   final prompt = await DotPrompt.fromFile('example/prompts/greet.prompt');

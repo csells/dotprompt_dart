@@ -3,12 +3,8 @@ name: greet
 model: gemini-2.0-pro
 input:
   schema:
-    type: object
     properties:
-      name:
-        type: string
-        description: The name of the person to greet
-    required: [name]
+      name: string, The name of the person to greet
 output:
   schema:
     type: object

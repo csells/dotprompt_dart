@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:dotprompt/dot_prompt.dart';
+import 'package:dotprompt_dart/dotprompt_dart.dart';
 import 'package:test/test.dart';
 
 import 'test_utility.dart';

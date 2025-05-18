@@ -1,5 +1,6 @@
-import 'dart:convert';
+import 'dart:convert' as json;
 
+import 'package:json_schema/json_schema.dart';
 import 'package:yaml/yaml.dart';
 
 import 'input_output_config.dart';
@@ -170,7 +171,19 @@ class DotPromptFrontMatter {
   @override
   String toString() {
     final buffer = StringBuffer();
-    const encoder = JsonEncoder.withIndent('  ');
+    final encoder = json.JsonEncoder.withIndent('  ', (object) {
+      if (object is JsonSchema) {
+        return object.schemaMap;
+      }
+      if (object is Map<String, dynamic>) {
+        // Convert the map to JSON string without escaping forward slashes
+        final jsonStr = const json.JsonEncoder()
+            .convert(object)
+            .replaceAll(r'\/', '/');
+        return const json.JsonDecoder().convert(jsonStr);
+      }
+      return object;
+    });
 
     if (name != null) buffer.writeln('name: $name');
     if (variant != null) buffer.writeln('variant: $variant');

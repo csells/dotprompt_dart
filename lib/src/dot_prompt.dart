@@ -10,6 +10,9 @@ import 'utility.dart';
 
 /// The main class for working with .prompt files.
 class DotPrompt {
+  DotPrompt._({required this.frontMatter, required String template})
+    : _template = Template(template, htmlEscapeValues: false);
+
   /// Loads a .prompt from a string content.
   factory DotPrompt.fromString(
     String content, {
@@ -40,30 +43,6 @@ class DotPrompt {
       template: template,
     );
   }
-  DotPrompt._({required this.frontMatter, required this.template});
-
-  // Applies default values from default settings.
-  static Map<String, dynamic> _applyDefaults({
-    required Map<String, dynamic> frontMatter,
-    Map<String, dynamic>? defaults,
-  }) {
-    final result = Map<String, dynamic>.from(frontMatter);
-
-    if (defaults != null) {
-      // Only add keys from defaults that don't already exist in front matter
-      defaults.forEach((key, value) {
-        if (!result.containsKey(key)) result[key] = value;
-      });
-    }
-
-    return result;
-  }
-
-  /// The properties parsed from the front matter of the prompt file.
-  final DotPromptFrontMatter frontMatter;
-
-  /// The template content of the prompt file.
-  final String template;
 
   /// Loads a .prompt file from the given path.
   static Future<DotPrompt> fromFile(
@@ -87,9 +66,31 @@ class DotPrompt {
     return DotPrompt.fromString(content, defaults: defaults);
   }
 
-  /// Renders the template with the given input data.
-  String render(Map<String, dynamic> input) {
-    final t = Template(template, htmlEscapeValues: false);
-    return t.renderString(input);
+  // Applies default values from default settings.
+  static Map<String, dynamic> _applyDefaults({
+    required Map<String, dynamic> frontMatter,
+    Map<String, dynamic>? defaults,
+  }) {
+    final result = Map<String, dynamic>.from(frontMatter);
+
+    if (defaults != null) {
+      // Only add keys from defaults that don't already exist in front matter
+      defaults.forEach((key, value) {
+        if (!result.containsKey(key)) result[key] = value;
+      });
+    }
+
+    return result;
   }
+
+  /// The properties parsed from the front matter of the prompt file.
+  final DotPromptFrontMatter frontMatter;
+
+  /// The template content of the prompt file.
+  String get template => _template.source;
+
+  final Template _template;
+
+  /// Renders the template with the given input data.
+  String render(Map<String, dynamic> input) => _template.renderString(input);
 }
