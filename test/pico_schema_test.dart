@@ -323,7 +323,7 @@ Template content
         expect(schema.properties['name']!.typeName, 'string');
         expect(schema.properties['subtitle']!.typeName, 'string, null');
         expect(
-          prompt.frontMatter.input.default_['subtitle'],
+          prompt.frontMatter.input.defaultValues['subtitle'],
           'Default subtitle',
         );
       });
@@ -469,12 +469,8 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
-      mixed(array, Array with mixed types):
-        type: array
-        items:
-          type: object
+      mixed(array, Array with mixed types): any
 ---
 Template content
 ''';
@@ -485,7 +481,8 @@ Template content
         expect(schema.properties['mixed'], isNotNull);
         expect(schema.properties['mixed']!.typeName, 'array');
         expect(schema.properties['mixed']?.items, isNotNull);
-        expect(schema.properties['mixed']!.items!.typeName, 'array');
+        // For arrays with any type, items should be an empty object
+        expect(schema.properties['mixed']!.items!.properties, isEmpty);
       });
 
       test('handles arrays with optional elements', () {
@@ -781,7 +778,7 @@ input:
   schema:
     type: object
     properties:
-      name: string, User's name
+    name: string, User's name
     additionalProperties:
       type: string
 ---

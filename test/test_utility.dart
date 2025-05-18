@@ -6,6 +6,7 @@ extension JsonSchemaTestExtension on JsonSchema {
   String get typeName {
     // If we have a typeList, use that first
     final typeList = this.typeList;
+    final type = typeList?.firstOrNull;
     if (typeList != null && typeList.isNotEmpty) {
       final buffer = StringBuffer();
       for (final type in typeList) {
@@ -23,6 +24,9 @@ extension JsonSchemaTestExtension on JsonSchema {
 
     // If we have items but no type, it's an array
     if (items != null) return 'array';
+
+    // If the schema is an empty object (e.g., items: {}), return 'any'
+    if (properties.isEmpty && items == null) return 'any';
 
     return 'none';
   }
