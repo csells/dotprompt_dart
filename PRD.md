@@ -44,7 +44,14 @@ plug‑in, non‑Dart runtimes.
 * Compile the `input.schema` and `output.schema` blocks—written in
   [Picoschema](https://google.github.io/dotprompt/reference/picoschema/)—into
   JSON Schema for runtime validation. Picoschema is a YAML‑friendly subset that
-  ejects cleanly to JSON Schema.  
+  ejects cleanly to JSON Schema. Schema detection rules:
+  * If a schema contains a top-level `type` property, it is treated as pure JSON Schema
+    and passed through directly to `JsonSchema.create`
+  * Otherwise, if the schema contains PicoSchema features (optional fields with `?`,
+    parenthetical types, comma-separated descriptions), it is treated as pure PicoSchema
+    and compiled to JSON Schema
+  * Mixed syntax (JSON Schema with PicoSchema features or vice versa) is not supported
+    and will result in validation errors
 * **Note:** YAML parsing should handle nested structures (e.g., `YamlMap` and `YamlList`) and convert them to `Map<String, dynamic>`.
 
 ### Template Engine

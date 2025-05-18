@@ -27,7 +27,7 @@ abstract class BaseConfig {
         type == pico.SchemaType.picoSchema
             ? pico.PicoSchema(schema).expand()
             : schema;
-    print('DEBUG: Schema being passed to JsonSchema.create: $map');
+    dev.log('DEBUG: Schema being passed to JsonSchema.create: $map');
     dev.log('Schema being passed to JsonSchema.create: $map');
     return JsonSchema.create(map);
   }

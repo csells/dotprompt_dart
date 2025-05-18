@@ -499,14 +499,11 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       address(object, User address):
-        type: object
-        properties:
-          street: string, Street address
-          city: string, City name
-          state: string, State code
+        street: string, Street address
+        city: string, City name
+        state: string, State code
 ---
 Template content
 ''';
@@ -529,13 +526,10 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       address(object, User address):
-        type: object
-        properties:
-          street: string, Street address
-          apt?: string, Optional apartment number
+        street: string, Street address
+        apt?: string, Optional apartment number
 ---
 Template content
 ''';
@@ -558,7 +552,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       empty(object, Empty object): object
 ---
@@ -578,12 +571,9 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       data(object, Object with null values):
-        type: object
-        properties:
-          field: null, Null field
+        field: null, Null field
 ---
 Template content
 ''';
@@ -684,7 +674,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       status(enum, Current status): [PENDING, APPROVED, REJECTED]
 ---
@@ -719,7 +708,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       status(enum, Enum with special chars): [PENDING!, APPROVED@, REJECTED#]
 ---
@@ -743,11 +731,8 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
-      status(enum, Current status):
-        type: string
-        enum: [active, inactive, pending]
+      status(enum, Current status): [active, inactive, pending]
 ---
 Template content
 ''';
@@ -774,11 +759,9 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       name: string, User's name
-    additionalProperties:
-      type: string
+    (*): string
 ---
 Template content
 ''';
@@ -797,7 +780,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       metadata(object, Additional metadata):
         (*): any
@@ -821,7 +803,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       metadata(object, Complex wildcard):
         (*): object, Complex type
@@ -845,7 +826,6 @@ Template content
 ---
 input:
   schema:
-    type: object
     properties:
       metadata(object, Array wildcard):
         (*): array, Array type
@@ -1161,15 +1141,14 @@ Template content
         expect(schema.properties['field1']!.typeName, 'string');
       });
 
-      test('handles mixed Picoschema and JSON Schema', () {
+      test('rejects mixed Picoschema and JSON Schema', () {
         const input = '''
 ---
 input:
   schema:
     type: object
     properties:
-      name: string, User name
-      age: integer, User age
+      name: string, User name  # PicoSchema syntax in JSON Schema
       metadata:
         type: object
         properties:
@@ -1177,16 +1156,41 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['name'], isNotNull);
-        expect(schema.properties['name']!.typeName, 'string');
-        expect(schema.properties['age'], isNotNull);
-        expect(schema.properties['age']!.typeName, 'integer');
-        expect(schema.properties['metadata'], isNotNull);
-        expect(schema.properties['metadata']!.typeName, 'object');
+        expect(
+          () => DotPrompt.fromString(input),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              'Mixed schema types not allowed. Schema must be either pure JSON '
+                  'Schema or pure PicoSchema',
+            ),
+          ),
+        );
+      });
+
+      test('rejects JSON Schema with PicoSchema features', () {
+        const input = '''
+---
+input:
+  schema:
+    type: object
+    properties:
+      field?: string  # Optional field syntax not allowed in JSON Schema
+---
+Template content
+''';
+        expect(
+          () => DotPrompt.fromString(input),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              'Mixed schema types not allowed. Schema must be either pure JSON '
+                  'Schema or pure PicoSchema',
+            ),
+          ),
+        );
       });
 
       test('handles complex nested JSON Schema', () {

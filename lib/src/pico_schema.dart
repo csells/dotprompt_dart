@@ -17,7 +17,7 @@ class PicoSchema {
   /// Creates a new instance of [PicoSchema].
   /// Throws [FormatException] if the schema is not a valid PicoSchema.
   PicoSchema(this.schema) {
-    print('DEBUG: PicoSchema constructor received schema: \\$schema');
+    dev.log('DEBUG: PicoSchema constructor received schema: \\$schema');
     if (schemaType(schema) != SchemaType.picoSchema) {
       throw const FormatException('Schema is not a valid pico schema');
     }
@@ -38,14 +38,42 @@ class PicoSchema {
   /// Determines the type of schema: JSON Schema, Picoschema, or unknown.
   static SchemaType schemaType(Map<String, dynamic> schema) {
     // If there's a type property at the top level, it's JSON Schema
-    if (schema.containsKey('type')) return SchemaType.jsonSchema;
+    // and ALL nested properties must follow JSON Schema format
+    if (schema.containsKey('type')) {
+      // Validate that there are no PicoSchema features anywhere in the schema
+      bool hasPicoFeatures(dynamic value) {
+        if (value is Map<String, dynamic>) {
+          // Check for PicoSchema indicators in keys
+          for (final key in value.keys) {
+            if (key.contains('?') || key.contains('(') || key == '(*)') {
+              return true;
+            }
+          }
+          // Check values recursively
+          for (final val in value.values) {
+            if (hasPicoFeatures(val)) return true;
+          }
+        } else if (value is String) {
+          // In JSON Schema context, only check for comma-separated descriptions
+          // as those are definitely PicoSchema syntax
+          return value.contains(',');
+        }
+        return false;
+      }
 
-    // Check properties for PicoSchema features
+      if (hasPicoFeatures(schema)) {
+        throw const FormatException(
+          'Mixed schema types not allowed. Schema must be either pure JSON Schema or pure PicoSchema',
+        );
+      }
+      return SchemaType.jsonSchema;
+    }
+
+    // Check for PicoSchema features
     if (schema.containsKey('properties')) {
       final properties = schema['properties'] as Map<String, dynamic>;
       for (final entry in properties.entries) {
         // If any property key contains PicoSchema features, it's PicoSchema
-        // shorthand
         if (entry.key.contains('?') || entry.key.contains('(')) {
           return SchemaType.picoSchema;
         }
@@ -68,65 +96,12 @@ class PicoSchema {
             return SchemaType.picoSchema;
           }
         }
-        // Recursively check nested properties
-        if (entry.value is Map<String, dynamic>) {
-          final nestedType = schemaType(entry.value as Map<String, dynamic>);
-          if (nestedType == SchemaType.picoSchema) return SchemaType.picoSchema;
-        }
       }
     }
 
     // Check for wildcard fields
-    if (schema.containsKey('(*)')) return SchemaType.picoSchema;
-
-    // Check for wildcard in additionalProperties
-    if (schema.containsKey('additionalProperties')) {
-      final additionalProperties = schema['additionalProperties'];
-      if (additionalProperties is String) {
-        final str = additionalProperties;
-        if (str.contains(',') ||
-            [
-              'string',
-              'number',
-              'integer',
-              'boolean',
-              'null',
-              'object',
-              'array',
-              'any',
-            ].contains(str.trim())) {
-          return SchemaType.picoSchema;
-        }
-      }
-      if (additionalProperties is Map<String, dynamic>) {
-        final nestedType = schemaType(additionalProperties);
-        if (nestedType == SchemaType.picoSchema) return SchemaType.picoSchema;
-      }
-    }
-
-    // Check items for PicoSchema features
-    if (schema.containsKey('items')) {
-      final items = schema['items'];
-      if (items is String) {
-        final str = items;
-        if (str.contains(',') ||
-            [
-              'string',
-              'number',
-              'integer',
-              'boolean',
-              'null',
-              'object',
-              'array',
-              'any',
-            ].contains(str.trim())) {
-          return SchemaType.picoSchema;
-        }
-      }
-      if (items is Map<String, dynamic>) {
-        final nestedType = schemaType(items);
-        if (nestedType == SchemaType.picoSchema) return SchemaType.picoSchema;
-      }
+    if (schema.containsKey('(*)')) {
+      return SchemaType.picoSchema;
     }
 
     // If we haven't found any clear indicators, return unknown
@@ -135,10 +110,12 @@ class PicoSchema {
 
   /// Returns a valid JSON Schema map, expanding PicoSchema if needed.
   static Map<String, dynamic> _getJsonSchema(Map<String, dynamic> map) {
-    print('DEBUG: _getJsonSchema received map: \\$map');
+    dev.log('DEBUG: _getJsonSchema received map: \\$map');
     final type = schemaType(map);
     if (type == SchemaType.picoSchema) {
       return PicoSchema(map).expand();
+    } else if (type == SchemaType.jsonSchema) {
+      return map; // Pass through pure JSON Schema unchanged
     }
     return map;
   }
@@ -146,7 +123,7 @@ class PicoSchema {
   /// Expands PicoSchema shorthand into valid JSON Schema.
   /// If the input is already valid JSON Schema, it is passed through unchanged.
   Map<String, dynamic> expand() {
-    print('DEBUG: Input schema to expand: \\$schema');
+    dev.log('DEBUG: Input schema to expand: \\$schema');
     dev.log('Input schema: $schema'); // Debug log
 
     // Recursively check every map for invalid wildcard field syntax
@@ -167,64 +144,20 @@ class PicoSchema {
     // This is PicoSchema shorthand - expand it
     final formatted = Map<String, dynamic>.from(schema);
 
-    // Ensure type is a string
-    if (formatted.containsKey('type')) {
-      if (formatted['type'] is List) {
-        // For type lists, we'll use typeList instead
-        formatted['typeList'] = (formatted['type'] as List).cast<String>();
-        // Keep the first type as the primary type
-        formatted['type'] = (formatted['type'] as List).first.toString();
-      } else {
-        // For single types, keep as is - JsonSchema.create will convert to
-        // SchemaType
-        formatted['type'] = formatted['type'].toString();
-      }
+    // Ensure root object has type: object
+    if (!formatted.containsKey('type')) {
+      formatted['type'] = 'object';
     }
 
-    // Format properties
+    // If we have properties, expand them
     if (formatted.containsKey('properties')) {
       final properties = formatted['properties'] as Map<String, dynamic>;
       final formattedProperties = <String, dynamic>{};
-      Map<String, dynamic>? wildcardSchema;
 
-      properties.forEach((key, value) {
+      for (final entry in properties.entries) {
+        final key = entry.key;
+        final value = entry.value;
         dev.log('Processing property: $key = $value'); // Debug log
-        // Handle wildcard fields: (*)
-        if (key.trim() == '(*)') {
-          // Expand the wildcard schema
-          if (value is String) {
-            // e.g. (*): string
-            final parts = value.split(',');
-            final type = parts[0].trim();
-            final description = parts.length > 1 ? parts[1].trim() : null;
-            if (type == 'any') {
-              wildcardSchema = {};
-              if (description != null) {
-                wildcardSchema?['description'] = description;
-              }
-            } else {
-              wildcardSchema = {
-                'type': type,
-                if (description != null) 'description': description,
-              };
-            }
-            dev.log('Created wildcard schema: $wildcardSchema'); // Debug log
-          } else if (value is Map) {
-            // Check for invalid wildcard field syntax in nested map
-            final nestedMap = Map<String, dynamic>.from(value);
-            for (final nestedKey in nestedMap.keys) {
-              if (nestedKey.trim().startsWith('(*') &&
-                  nestedKey.trim() != '(*)') {
-                throw FormatException(
-                  'Invalid wildcard field syntax: $nestedKey',
-                );
-              }
-            }
-            wildcardSchema = _getJsonSchema(nestedMap);
-          }
-          // Do not add to formattedProperties
-          return;
-        }
 
         // Parse PicoSchema features from the original key
         final optional = key.endsWith('?');
@@ -241,7 +174,7 @@ class PicoSchema {
           if (!['array', 'object', 'enum'].contains(parenMatch.group(2))) {
             throw FormatException(
               'Invalid parenthetical type in PicoSchema: '
-              '[31m${parenMatch.group(2)}[0m',
+              '[31m${parenMatch.group(2)}[0m',
             );
           }
           normalizedKey = parenMatch.group(1)!.trim();
@@ -251,41 +184,82 @@ class PicoSchema {
           normalizedKey = keyWithoutOptional.trim();
         }
 
+        // Handle wildcard fields: (*)
+        if (key.trim() == '(*)') {
+          // Expand the wildcard schema
+          if (value is String) {
+            // e.g. (*): string
+            final parts = value.split(',');
+            final type = parts[0].trim();
+            final description = parts.length > 1 ? parts[1].trim() : null;
+            if (type == 'any') {
+              formatted['additionalProperties'] = true;
+              if (description != null) {
+                formatted['additionalPropertiesDescription'] = description;
+              }
+            } else {
+              formatted['additionalProperties'] = {
+                'type': type,
+                if (description != null) 'description': description,
+              };
+            }
+            dev.log(
+              'Created wildcard schema: ${formatted['additionalProperties']}',
+            ); // Debug log
+          } else if (value is Map) {
+            // Check for invalid wildcard field syntax in nested map
+            final nestedMap = Map<String, dynamic>.from(value);
+            for (final nestedKey in nestedMap.keys) {
+              if (nestedKey.trim().startsWith('(*') &&
+                  nestedKey.trim() != '(*)') {
+                throw FormatException(
+                  'Invalid wildcard field syntax: $nestedKey',
+                );
+              }
+            }
+            formatted['additionalProperties'] = _getJsonSchema(nestedMap);
+          }
+          continue;
+        }
+
         // ARRAY HANDLING: handle at the top level, not inside if (value is Map)
         if (picoType == 'array') {
+          final arraySchema = <String, dynamic>{
+            'type': 'array',
+            if (picoDescription != null) 'description': picoDescription,
+          };
+
           if (value is String) {
             // handle shorthand
             final parts = value.split(',');
             final itemType = parts[0].trim();
             final itemDescription = parts.length > 1 ? parts[1].trim() : null;
-            formattedProperties[normalizedKey] = {
-              'type': 'array',
-              'items': {
+
+            if (itemType == 'any') {
+              arraySchema['items'] = <String, dynamic>{};
+            } else {
+              arraySchema['items'] = <String, dynamic>{
                 'type': itemType,
                 if (itemDescription != null) 'description': itemDescription,
-              },
-              if (picoDescription != null) 'description': picoDescription,
-            };
-            print(
-              'DEBUG: Assigned array property for $normalizedKey: \\${formattedProperties[normalizedKey]}',
-            );
-            return;
+              };
+            }
           } else if (value is Map<String, dynamic>) {
-            // handle nested object
-            formattedProperties[normalizedKey] = {
-              'type': 'array',
-              'items': PicoSchema({'properties': value}).expand(),
-              if (picoDescription != null) 'description': picoDescription,
-            };
-            return;
+            // handle nested object - maintain PicoSchema syntax
+            final itemSchema = PicoSchema({'properties': value}).expand();
+            arraySchema['items'] = itemSchema;
           } else {
-            formattedProperties[normalizedKey] = {
-              'type': 'array',
-              'items': value,
-              if (picoDescription != null) 'description': picoDescription,
-            };
-            return;
+            arraySchema['items'] = value;
           }
+
+          if (optional) {
+            arraySchema['type'] = <String>['array', 'null'];
+          }
+
+          formattedProperties[normalizedKey] = arraySchema;
+          dev.log(
+            'DEBUG: Assigned array property for $normalizedKey: \\$arraySchema',
+          );
+          continue;
         }
 
         if (value is Map) {
@@ -320,9 +294,52 @@ class PicoSchema {
               // If no type is specified, default to object
               nested['type'] = ['object', 'null'];
             }
+          } else if (!nested.containsKey('type')) {
+            // If no type is specified, default to object
+            nested['type'] = 'object';
           }
+
+          // Add description from PicoSchema if present
+          if (picoDescription != null) {
+            nested['description'] = picoDescription;
+          }
+
+          // Convert nested properties to proper JSON Schema format
+          if (!nested.containsKey('properties')) {
+            final nestedProperties = <String, dynamic>{};
+            for (final entry in nested.entries) {
+              if (entry.key != 'type' && entry.key != 'description') {
+                final optional = entry.key.endsWith('?');
+                final normalizedKey =
+                    optional
+                        ? entry.key.substring(0, entry.key.length - 1)
+                        : entry.key;
+
+                if (entry.value is String) {
+                  final parts = entry.value.toString().split(',');
+                  final type = parts[0].trim();
+                  final description = parts.length > 1 ? parts[1].trim() : null;
+                  nestedProperties[normalizedKey] = {
+                    'type': optional ? [type, 'null'] : type,
+                    if (description != null) 'description': description,
+                  };
+                } else if (entry.value is Map) {
+                  final nestedValue =
+                      PicoSchema({'properties': entry.value}).expand();
+                  if (optional) {
+                    nestedValue['type'] = ['object', 'null'];
+                  }
+                  nestedProperties[normalizedKey] = nestedValue;
+                }
+              }
+            }
+            if (nestedProperties.isNotEmpty) {
+              nested['properties'] = nestedProperties;
+            }
+          }
+
           formattedProperties[normalizedKey] = nested;
-          return;
+          continue;
         } else if (value is List && picoType == 'enum') {
           // Handle enum values as YAML list
           final enumDesc = picoDescription;
@@ -339,19 +356,20 @@ class PicoSchema {
               if (enumDesc != null) 'description': enumDesc,
             };
           }
+          continue;
         } else if (value is String) {
           // Handle simple type definitions like "string, description"
-          final parts = value.split(',');
+          final parts = value.split(',').map((s) => s.trim()).toList();
           final type = parts[0].trim();
-          final description = parts.length > 1 ? parts[1].trim() : null;
+          final description =
+              parts.length > 1 ? parts.sublist(1).join(',').trim() : null;
 
           // Use PicoSchema features if present
           if (picoType == 'object') {
             final objectDesc = picoDescription ?? description;
             if (optional) {
               formattedProperties[normalizedKey] = {
-                'type': 'object',
-                'typeList': ['object', 'null'],
+                'type': ['object', 'null'],
                 if (objectDesc != null) 'description': objectDesc,
               };
             } else {
@@ -360,8 +378,9 @@ class PicoSchema {
                 if (objectDesc != null) 'description': objectDesc,
               };
             }
-            return;
+            continue;
           }
+
           if (picoType == 'enum') {
             final enumDesc = picoDescription ?? description;
             if (type.startsWith('[') && type.endsWith(']')) {
@@ -384,7 +403,7 @@ class PicoSchema {
                   if (enumDesc != null) 'description': enumDesc,
                 };
               }
-              return;
+              continue;
             } else {
               // Invalid enum syntax
               throw const FormatException('Invalid enum syntax in PicoSchema');
@@ -404,17 +423,16 @@ class PicoSchema {
             ];
             if (optional) {
               formattedProperties[normalizedKey] = {
-                'type': 'object',
-                'typeList': anyTypes,
+                'type': anyTypes,
                 if (description != null) 'description': description,
               };
             } else {
               formattedProperties[normalizedKey] = {
-                'type': 'object', // Default to object for 'any'
+                'type': anyTypes,
                 if (description != null) 'description': description,
               };
             }
-            return;
+            continue;
           }
 
           // Handle enum values (not using (enum) syntax)
@@ -438,7 +456,7 @@ class PicoSchema {
                 if (description != null) 'description': description,
               };
             }
-            return;
+            continue;
           }
 
           // Default case: simple type
@@ -467,17 +485,18 @@ class PicoSchema {
               if (description != null) 'description': description,
             };
           }
+          continue;
         } else {
           // If value is not a String, Map, or (for enums) List, it's invalid
           throw const FormatException('Invalid PicoSchema property value');
         }
-      });
+      }
 
       formatted['properties'] = formattedProperties;
-      if (wildcardSchema != null) {
+      if (formatted.containsKey('additionalProperties')) {
         // For 'any', set additionalProperties to true (bool)
-        if (wildcardSchema is Map<String, dynamic>) {
-          final ws = wildcardSchema!;
+        if (formatted['additionalProperties'] is Map<String, dynamic>) {
+          final ws = formatted['additionalProperties'] as Map<String, dynamic>;
           if (ws.isEmpty) {
             formatted['additionalProperties'] = true;
             dev.log('Set additionalProperties: true (for any)'); // Debug log
@@ -490,15 +509,13 @@ class PicoSchema {
               'Set additionalProperties: ${formatted['additionalProperties']}',
             ); // Debug log
           }
-        } else if (wildcardSchema is bool) {
-          formatted['additionalProperties'] = wildcardSchema;
+        } else if (formatted['additionalProperties'] is bool) {
+          // Keep as is
         }
         // If this object is only a wildcard, ensure type: object and remove (*)
         if (!formatted.containsKey('type')) {
           formatted['type'] = 'object';
         }
-        // Remove any lingering (*) key
-        formatted.remove('(*)');
       }
     }
 
@@ -511,30 +528,6 @@ class PicoSchema {
       } else if (formatted['items'] is String) {
         // Handle simple type string for items
         formatted['items'] = {'type': formatted['items']};
-      }
-    }
-
-    // Handle additional properties
-    if (formatted.containsKey('additionalProperties')) {
-      if (formatted['additionalProperties'] is Map) {
-        formatted['additionalProperties'] = _getJsonSchema(
-          Map<String, dynamic>.from(formatted['additionalProperties']),
-        );
-      } else if (formatted['additionalProperties'] is String) {
-        final type = formatted['additionalProperties'] as String;
-        formatted['additionalProperties'] = {
-          'type': type == 'any' ? 'object' : type,
-          if (type == 'any')
-            'typeList': [
-              'string',
-              'number',
-              'integer',
-              'boolean',
-              'null',
-              'object',
-              'array',
-            ],
-        };
       }
     }
 
@@ -554,9 +547,9 @@ class PicoSchema {
     }
 
     dev.log('Final expanded schema: $formatted'); // Debug log
-    print('DEBUG: Final expanded schema: \\$formatted');
+    dev.log('DEBUG: Final expanded schema: \\$formatted');
     if (formatted.containsKey('items')) {
-      print('DEBUG: Final items property: \\${formatted['items']}');
+      dev.log('DEBUG: Final items property: \\${formatted['items']}');
     }
     return formatted;
   }
