@@ -26,4 +26,15 @@ extension JsonSchemaTestExtension on JsonSchema {
 
     return 'none';
   }
+
+  // Returns the additionalProperties schema if present and a map, else null.
+  JsonSchema? get additionalProperties {
+    final map = schemaMap;
+    if (map == null) return null;
+    final ap = map['additionalProperties'];
+    if (ap is Map<String, dynamic>) {
+      return JsonSchema.create(ap);
+    }
+    return null;
+  }
 }

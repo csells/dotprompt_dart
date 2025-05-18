@@ -29,6 +29,29 @@ class InputConfig {
   static Map<String, dynamic> _expandPicoSchema(Map<String, dynamic> schema) {
     dev.log('Input schema: $schema'); // Debug log
 
+    // Recursively check every map for invalid wildcard field syntax
+    void checkInvalidWildcardSyntax(dynamic map) {
+      if (map is Map) {
+        final dartMap = yamlToMap(map) as Map<String, dynamic>;
+        for (final key in dartMap.keys) {
+          if (key.trim().startsWith('(*') && key.trim() != '(*)') {
+            throw FormatException('Invalid wildcard field syntax: $key');
+          }
+        }
+        for (final value in dartMap.values) {
+          checkInvalidWildcardSyntax(value);
+        }
+      }
+    }
+
+    checkInvalidWildcardSyntax(schema);
+
+    // Convert to Dart map if needed
+    final dartSchema = yamlToMap(schema) as Map<String, dynamic>;
+
+    // Use dartSchema for further processing
+    schema = dartSchema;
+
     // Check if this is already valid JSON Schema
     var isAlreadyJsonSchema = true;
 
@@ -100,9 +123,17 @@ class InputConfig {
             }
             dev.log('Created wildcard schema: $wildcardSchema'); // Debug log
           } else if (value is Map) {
-            wildcardSchema = _expandPicoSchema(
-              Map<String, dynamic>.from(value),
-            );
+            // Check for invalid wildcard field syntax in nested map
+            final nestedMap = Map<String, dynamic>.from(value);
+            for (final nestedKey in nestedMap.keys) {
+              if (nestedKey.trim().startsWith('(*') &&
+                  nestedKey.trim() != '(*)') {
+                throw FormatException(
+                  'Invalid wildcard field syntax: $nestedKey',
+                );
+              }
+            }
+            wildcardSchema = _expandPicoSchema(nestedMap);
           }
           // Do not add to formattedProperties
           return;
@@ -134,6 +165,19 @@ class InputConfig {
         }
 
         if (value is Map) {
+          // Check for invalid wildcard field syntax in all nested property maps
+          if (value.containsKey('properties')) {
+            final nestedProperties =
+                value['properties'] as Map<String, dynamic>;
+            for (final nestedKey in nestedProperties.keys) {
+              if (nestedKey.trim().startsWith('(*') &&
+                  nestedKey.trim() != '(*)') {
+                throw FormatException(
+                  'Invalid wildcard field syntax: $nestedKey',
+                );
+              }
+            }
+          }
           // Recursively format nested properties and ensure wildcard expansion
           var nested = _expandPicoSchema(Map<String, dynamic>.from(value));
           // If the nested schema contains only a (*) key (and maybe
@@ -451,6 +495,21 @@ class InputConfig {
       }
     }
 
+    // After formatting properties, check required fields
+    if (formatted.containsKey('required') &&
+        formatted.containsKey('properties')) {
+      final requiredFields = List<String>.from(formatted['required'] as List);
+      final propertyKeys =
+          (formatted['properties'] as Map<String, dynamic>).keys.toSet();
+      final missing =
+          requiredFields.where((f) => !propertyKeys.contains(f)).toList();
+      if (missing.isNotEmpty) {
+        throw FormatException(
+          'Required field(s) missing from properties: ${missing.join(', ')}',
+        );
+      }
+    }
+
     dev.log('Final expanded schema: $formatted'); // Debug log
     return formatted;
   }
@@ -565,6 +624,16 @@ class DotPromptFrontMatter {
 
     final input = ensureMap(data['input']);
     final output = ensureMap(data['output']);
+
+    // Validate input for extra/unexpected fields
+    final allowedInputFields = {'schema', 'default'};
+    final extraInputFields =
+        input.keys.where((k) => !allowedInputFields.contains(k)).toList();
+    if (extraInputFields.isNotEmpty) {
+      throw FormatException(
+        'Unexpected field(s) in input: ${extraInputFields.join(', ')}',
+      );
+    }
 
     return DotPromptFrontMatter(
       name: data['name'] as String?,
