@@ -243,7 +243,7 @@ class PicoSchema {
               formattedProperties[normalizedKey] = {
                 'type': 'object',
                 'additionalProperties': true,
-                if (description != null) 'description': description,
+                if (picoDescription != null) 'description': picoDescription,
               };
             } else {
               formattedProperties[normalizedKey] = {
@@ -252,6 +252,7 @@ class PicoSchema {
                   'type': type,
                   if (description != null) 'description': description,
                 },
+                if (picoDescription != null) 'description': picoDescription,
               };
             }
             continue;
@@ -260,6 +261,7 @@ class PicoSchema {
             formattedProperties[normalizedKey] = {
               'type': 'object',
               'additionalProperties': schema,
+              if (picoDescription != null) 'description': picoDescription,
             };
             continue;
           }

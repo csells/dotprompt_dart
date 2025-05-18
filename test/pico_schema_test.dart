@@ -3,7 +3,6 @@
 import 'dart:convert';
 
 import 'package:dotprompt/dot_prompt.dart';
-import 'package:json_schema/json_schema.dart';
 import 'package:test/test.dart';
 
 import 'test_utility.dart';
@@ -905,16 +904,22 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['status'], isNotNull);
-        expect(schema.properties['status']!.typeName, 'string');
-        expect(schema.properties['status']?.enumValues, [
-          'PENDING!',
-          'APPROVED@',
-          'REJECTED#',
-        ]);
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'status': {
+              'type': 'string',
+              'description': 'Enum with special chars',
+              'enum': ['PENDING!', 'APPROVED@', 'REJECTED#'],
+            },
+          },
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
 
       test('handles enums with custom values', () {
@@ -928,17 +933,22 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['status'], isNotNull);
-        expect(schema.properties['status']!.typeName, 'string');
-        expect(schema.properties['status']!.enumValues, isNotNull);
-        expect(schema.properties['status']!.enumValues, [
-          'active',
-          'inactive',
-          'pending',
-        ]);
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'status': {
+              'type': 'string',
+              'description': 'Current status',
+              'enum': ['active', 'inactive', 'pending'],
+            },
+          },
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
     });
 
@@ -957,13 +967,19 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['name'], isNotNull);
-        expect(schema.properties['name']!.typeName, 'string');
-        expect(schema.additionalProperties, isNotNull);
-        expect(schema.additionalProperties!.typeName, 'string');
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'name': {'type': 'string', 'description': "User's name"},
+          },
+          'additionalProperties': {'type': 'string'},
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
 
       test('handles wildcard any fields', () {
@@ -978,15 +994,22 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['metadata'], isNotNull);
-        expect(schema.properties['metadata']!.typeName, 'object');
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'metadata': {
+              'type': 'object',
+              'additionalProperties': true,
+              'description': 'Additional metadata',
+            },
+          },
+        };
 
-        final additionalPropertiesSchema =
-            schema.properties['metadata']?.additionalPropertiesSchema;
-        expect(additionalPropertiesSchema, isNull);
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
 
       test('handles wildcard fields with complex types', () {
@@ -1001,15 +1024,25 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['metadata'], isNotNull);
-        expect(schema.properties['metadata']!.typeName, 'object');
-        final additionalPropertiesSchema =
-            schema.properties['metadata']?.additionalPropertiesSchema;
-        expect(additionalPropertiesSchema, isA<JsonSchema>());
-        expect(additionalPropertiesSchema?.typeName, 'object');
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'metadata': {
+              'type': 'object',
+              'description': 'Complex wildcard',
+              'additionalProperties': {
+                'type': 'object',
+                'description': 'Complex type',
+              },
+            },
+          },
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
 
       test('handles wildcard fields with arrays', () {
@@ -1024,15 +1057,25 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['metadata'], isNotNull);
-        expect(schema.properties['metadata']!.typeName, 'object');
-        final additionalPropertiesSchema =
-            schema.properties['metadata']?.additionalPropertiesSchema;
-        expect(additionalPropertiesSchema, isA<JsonSchema>());
-        expect(additionalPropertiesSchema?.typeName, 'array');
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'metadata': {
+              'type': 'object',
+              'description': 'Array wildcard',
+              'additionalProperties': {
+                'type': 'array',
+                'description': 'Array type',
+              },
+            },
+          },
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
     });
 
@@ -1325,11 +1368,18 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['field1'], isNotNull);
-        expect(schema.properties['field1']!.typeName, 'string');
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'field1': {'type': 'string', 'description': 'A sample field'},
+          },
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
 
       test('rejects mixed Picoschema and JSON Schema', () {
@@ -1422,21 +1472,44 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['user'], isNotNull);
-        expect(schema.properties['user']!.typeName, 'object');
-        expect(schema.properties['user']?.properties['address'], isNotNull);
-        expect(
-          schema.properties['user']!.properties['address']!.typeName,
-          'object',
-        );
-        expect(schema.properties['user']?.properties['preferences'], isNotNull);
-        expect(
-          schema.properties['user']!.properties['preferences']!.typeName,
-          'object',
-        );
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'user': {
+              'type': 'object',
+              'properties': {
+                'name': {'type': 'string', 'description': 'User name'},
+                'address': {
+                  'type': 'object',
+                  'properties': {
+                    'street': {
+                      'type': 'string',
+                      'description': 'Street address',
+                    },
+                    'city': {'type': 'string', 'description': 'City name'},
+                    'state': {'type': 'string', 'description': 'State code'},
+                  },
+                },
+                'preferences': {
+                  'type': 'object',
+                  'properties': {
+                    'theme': {'type': 'string', 'description': 'UI theme'},
+                    'notifications': {
+                      'type': 'boolean',
+                      'description': 'Enable notifications',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
 
       test('handles JSON Schema with format validators', () {
@@ -1459,18 +1532,20 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['email'], isNotNull);
-        expect(schema.properties['email']!.typeName, 'string');
-        expect(schema.properties['email']?.format, 'email');
-        expect(schema.properties['date'], isNotNull);
-        expect(schema.properties['date']!.typeName, 'string');
-        expect(schema.properties['date']?.format, 'date');
-        expect(schema.properties['time'], isNotNull);
-        expect(schema.properties['time']!.typeName, 'string');
-        expect(schema.properties['time']?.format, 'time');
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'email': {'type': 'string', 'format': 'email'},
+            'date': {'type': 'string', 'format': 'date'},
+            'time': {'type': 'string', 'format': 'time'},
+          },
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
 
       test('handles JSON Schema with custom properties', () {
@@ -1488,15 +1563,22 @@ input:
 Template content
 ''';
         final prompt = DotPrompt.fromString(input);
-        final schema = prompt.frontMatter.input.schema;
-        expect(schema, isNotNull);
-        expect(schema!.typeName, 'object');
-        expect(schema.properties['field'], isNotNull);
-        expect(schema.properties['field']!.typeName, 'string');
-        // Access custom properties through the raw schema
-        final rawSchema = jsonDecode(schema.properties['field']!.toJson());
-        expect(rawSchema['customProp'], 'value');
-        expect(rawSchema['anotherCustom'], 123);
+        final expectedSchema = {
+          'type': 'object',
+          'properties': {
+            'field': {
+              'type': 'string',
+              'customProp': 'value',
+              'anotherCustom': 123,
+            },
+          },
+        };
+
+        final inputSchema =
+            jsonDecode(prompt.frontMatter.input.schema!.toJson())
+                as Map<String, dynamic>;
+
+        expect(mapDeepEquals(expectedSchema, inputSchema), isTrue);
       });
     });
   });
