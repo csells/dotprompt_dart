@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_dynamic_calls, avoid_print
 
+import 'dart:convert';
+
 import 'package:json_schema/json_schema.dart';
 
 /// Extension on JsonSchema for test utilities
@@ -51,6 +53,27 @@ bool mapDeepEquals(
   Map<String, dynamic> actual, [
   String path = '',
 ]) {
+  // Normalize both objects through JSON serialization
+  final normalizedExpected = jsonDecode(jsonEncode(expected));
+  final normalizedActual = jsonDecode(jsonEncode(actual));
+
+  return _mapDeepEqualsImpl(
+    normalizedExpected as Map<String, dynamic>,
+    normalizedActual as Map<String, dynamic>,
+    path,
+  );
+}
+
+bool _mapDeepEqualsImpl(
+  Map<String, dynamic> expected,
+  Map<String, dynamic> actual, [
+  String path = '',
+]) {
+  // Special case: if both maps are empty, they're equal
+  if (expected.isEmpty && actual.isEmpty) {
+    return true;
+  }
+
   if (expected.length != actual.length) {
     print(
       'Length mismatch at "$path": '
@@ -61,22 +84,48 @@ bool mapDeepEquals(
     return false;
   }
 
-  for (final key in expected.keys) {
-    final currentPath = path.isEmpty ? key : '$path.$key';
+  // Sort the keys to ensure consistent comparison order
+  final expectedKeys = expected.keys.toList()..sort();
+  final actualKeys = actual.keys.toList()..sort();
 
-    if (!actual.containsKey(key)) {
-      print('Missing key at "$currentPath"');
+  for (var i = 0; i < expectedKeys.length; i++) {
+    final key = expectedKeys[i];
+    final actualKey = actualKeys[i];
+
+    if (key != actualKey) {
+      print(
+        'Key order mismatch at "$path": expected "$key", actual "$actualKey"',
+      );
       return false;
     }
 
+    final currentPath = path.isEmpty ? key : '$path.$key';
     final value1 = expected[key];
     final value2 = actual[key];
 
     if (value1 is Map<String, dynamic>) {
-      if (!mapDeepEquals(value1, value2 as Map<String, dynamic>, currentPath)) {
+      if (value2 is! Map<String, dynamic>) {
+        print(
+          'Type mismatch at "$currentPath": '
+          'expected Map, actual ${value2.runtimeType}',
+        );
+        return false;
+      }
+      // Special case: if both maps are empty, they're equal
+      if (value1.isEmpty && value2.isEmpty) {
+        continue;
+      }
+      if (!_mapDeepEqualsImpl(value1, value2, currentPath)) {
         return false;
       }
     } else if (value1 is List) {
+      if (value2 is! List) {
+        print(
+          'Type mismatch at "$currentPath": '
+          'expected List, actual ${value2.runtimeType}',
+        );
+        return false;
+      }
       if (value1.length != value2.length) {
         print(
           'List length mismatch at "$currentPath": '

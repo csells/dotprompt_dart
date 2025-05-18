@@ -455,19 +455,9 @@ class PicoSchema {
 
           // Handle special case: 'any'
           if (type == 'any') {
-            if (optional) {
-              formattedProperties[normalizedKey] = {
-                'type': ['object', 'null'],
-                'additionalProperties': true,
-                if (description != null) 'description': description,
-              };
-            } else {
-              formattedProperties[normalizedKey] = {
-                'type': 'object',
-                'additionalProperties': true,
-                if (description != null) 'description': description,
-              };
-            }
+            formattedProperties[normalizedKey] = {
+              if (description != null) 'description': description,
+            };
             continue;
           }
 
