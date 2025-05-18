@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_dynamic_calls
+// ignore_for_file: avoid_dynamic_calls, avoid_print
 
 import 'package:dotprompt/dot_prompt.dart';
 import 'package:json_schema/json_schema.dart';

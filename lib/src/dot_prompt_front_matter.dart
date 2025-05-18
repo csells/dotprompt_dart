@@ -136,7 +136,8 @@ class InputConfig {
         if (value is Map) {
           // Recursively format nested properties and ensure wildcard expansion
           var nested = _expandPicoSchema(Map<String, dynamic>.from(value));
-          // If the nested schema contains only a (*) key (and maybe description), transform it
+          // If the nested schema contains only a (*) key (and maybe
+          // description), transform it
           if (nested.keys.where((k) => k != 'description').length == 1 &&
               nested.containsKey('(*)')) {
             final wildcard = nested.remove('(*)');
@@ -452,37 +453,6 @@ class InputConfig {
 
     dev.log('Final expanded schema: $formatted'); // Debug log
     return formatted;
-  }
-
-  static Map<String, dynamic> _prepareSchemaForJsonSchema(
-    Map<String, dynamic> schema,
-  ) {
-    // If additionalProperties is a map, ensure it's a valid schema map
-    if (schema.containsKey('additionalProperties') &&
-        schema['additionalProperties'] is Map<String, dynamic>) {
-      // Recursively prepare additionalProperties
-      schema['additionalProperties'] = _prepareSchemaForJsonSchema(
-        Map<String, dynamic>.from(schema['additionalProperties']),
-      );
-    }
-    // If properties exist, recursively prepare them
-    if (schema.containsKey('properties')) {
-      final props = schema['properties'] as Map<String, dynamic>;
-      schema['properties'] = props.map((k, v) {
-        if (v is Map<String, dynamic>) {
-          return MapEntry(k, _prepareSchemaForJsonSchema(v));
-        }
-        return MapEntry(k, v);
-      });
-    }
-    // If items exist and is a map, recursively prepare
-    if (schema.containsKey('items') &&
-        schema['items'] is Map<String, dynamic>) {
-      schema['items'] = _prepareSchemaForJsonSchema(
-        Map<String, dynamic>.from(schema['items']),
-      );
-    }
-    return schema;
   }
 }
 
