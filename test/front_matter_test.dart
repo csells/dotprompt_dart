@@ -445,5 +445,112 @@ Template content
         expect(prompt.frontMatter.config['topK'], 20);
       });
     });
+
+    // Model Field Advanced Tests
+    group('Model Field Advanced', () {
+      test('handles model version in config', () {
+        const input = '''
+---
+model: googleai/gemini-1.5-flash
+config:
+  version: gemini-1.5-flash-20240301
+---
+Template content
+''';
+        final prompt = DotPrompt.fromString(input);
+        expect(prompt.frontMatter.model, 'googleai/gemini-1.5-flash');
+        expect(
+          prompt.frontMatter.config['version'],
+          'gemini-1.5-flash-20240301',
+        );
+      });
+    });
+
+    // Config Field Advanced Tests
+    group('Config Field Advanced', () {
+      test('handles maxOutputTokens', () {
+        const input = '''
+---
+config:
+  maxOutputTokens: 1000
+---
+Template content
+''';
+        final prompt = DotPrompt.fromString(input);
+        expect(prompt.frontMatter.config['maxOutputTokens'], 1000);
+      });
+
+      test('handles temperature', () {
+        const input = '''
+---
+config:
+  temperature: 0.7
+---
+Template content
+''';
+        final prompt = DotPrompt.fromString(input);
+        expect(prompt.frontMatter.config['temperature'], 0.7);
+      });
+
+      test('handles topK and topP', () {
+        const input = '''
+---
+config:
+  topK: 20
+  topP: 0.8
+---
+Template content
+''';
+        final prompt = DotPrompt.fromString(input);
+        expect(prompt.frontMatter.config['topK'], 20);
+        expect(prompt.frontMatter.config['topP'], 0.8);
+      });
+    });
+
+    // Input/Output Schema Advanced Tests
+    group('Input/Output Schema Advanced', () {
+      test('handles schema format validation', () {
+        const input = '''
+---
+output:
+  format: json
+  schema:
+    type: object
+    properties:
+      result:
+        type: string
+        format: date-time
+---
+Template content
+''';
+        final prompt = DotPrompt.fromString(input);
+        expect(prompt.frontMatter.output.format, 'json');
+        expect(
+          prompt.frontMatter.output.schema?.properties['result']?.format,
+          'date-time',
+        );
+      });
+    });
+
+    // Extension Fields Advanced Tests
+    group('Extension Fields Advanced', () {
+      test('handles deeply nested extension fields', () {
+        const input = '''
+---
+myext.level1.level2.level3.level4.field: value
+myext.level1.level2.level3.level4.array: [1, 2, 3]
+---
+Template content
+''';
+        final prompt = DotPrompt.fromString(input);
+        final ext = prompt.frontMatter.ext['myext'] as Map<String, dynamic>;
+        final level1 = ext['level1'] as Map<String, dynamic>;
+        final level2 = level1['level2'] as Map<String, dynamic>;
+        final level3 = level2['level3'] as Map<String, dynamic>;
+        final level4 = level3['level4'] as Map<String, dynamic>;
+        expect(level4['field'], 'value');
+        expect(level4['array'], [1, 2, 3]);
+      });
+    });
   });
 }
