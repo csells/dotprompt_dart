@@ -15,7 +15,7 @@ not Dart.
 
 Unlike Google's implementation, this implementation doesn't do the execution of
 model prompts; instead, it uses dartantic_ai for the execution. You can
-absolutely use dotprompt_dart w/o dartantic_ai but simply using the schemas,
+absolutely use dotprompt_dart without dartantic_ai by simply using the schemas,
 model parameters, template expansion features, etc. and then feed all of that
 data into the model of your choice. That's what dartantic_ai uses it for.
 
@@ -28,6 +28,19 @@ Schema spec, but for use in Dart code, a `JsonSchema` object is much more useful
 and the one from the [json_schema](https://pub.dev/packages/json_schema) package
 particularly so. No matter which you use -- Pico Schema or JSON Schema -- you're
 going to get out a `JsonSchema` object for your use.
+
+## Features
+
+- Prompt File Support: Parse and execute `.prompt` files with YAML front-matter
+  and Handlebars templates
+- Schema Validation: Built-in support for [Pico
+  Schema](https://google.github.io/dotprompt/reference/picoschema/) and JSON
+  Schema for input/output validation
+- Model Configuration: Manage model settings through front-matter configuration
+- Type-Safe: The generated JSON Schema can be used to validate input to the
+  template rendering as well as to provide type info for model output
+- Extension Support: Custom configuration through namespaced keys (e.g.,
+  `myext.temperature`)
 
 ## Getting Started
 
@@ -90,17 +103,6 @@ void main() async {
   ...
 }
 ```
-
-## Features
-
-- Prompt File Support: Parse and execute `.prompt` files with YAML front-matter
-  and Handlebars templates
-- Schema Validation: Built-in support for [Pico
-  Schema](https://google.github.io/dotprompt/reference/picoschema/) and JSON
-  Schema for input/output validation
-- Model Configuration: Manage model settings through front-matter configuration
-- Type-Safe: The generated JSON Schema can be used to validate input to the
-  template rendering as well as to provide type info for model output.
 
 ## Schema Support
 
