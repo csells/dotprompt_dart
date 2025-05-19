@@ -18,7 +18,7 @@ input:
         type: string
 ---
 Hello, {{name}}!''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({'name': 'World'});
         expect(output, equals('Hello, World!'));
       });
@@ -38,7 +38,7 @@ input:
             type: string
 ---
 City: {{address.city}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'address': {'city': 'San Francisco'},
         });
@@ -59,7 +59,7 @@ input:
         type: boolean
 ---
 {{#if isLoggedIn}}Welcome back!{{/if}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         expect(dotPrompt.render({'isLoggedIn': true}), equals('Welcome back!'));
         expect(dotPrompt.render({'isLoggedIn': false}), equals(''));
       });
@@ -76,7 +76,7 @@ input:
         type: boolean
 ---
 {{#if isLoggedIn}}Welcome back!{{else}}Please log in.{{/if}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         expect(dotPrompt.render({'isLoggedIn': true}), equals('Welcome back!'));
         expect(
           dotPrompt.render({'isLoggedIn': false}),
@@ -96,7 +96,7 @@ input:
         type: boolean
 ---
 {{#unless isLoggedIn}}Please log in to continue.{{/unless}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         expect(
           dotPrompt.render({'isLoggedIn': false}),
           equals('Please log in to continue.'),
@@ -118,7 +118,7 @@ input:
           type: string
 ---
 {{#each items}}{{@index}}:{{this}}{{#unless @last}}, {{/unless}}{{/each}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'items': ['apple', 'banana', 'orange'],
         });
@@ -139,7 +139,7 @@ input:
           type: string
 ---
 {{#each items}}{{#if @first}}First: {{/if}}{{this}}{{#if @last}} (last){{/if}}{{#unless @last}}, {{/unless}}{{/each}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'items': ['apple', 'banana', 'orange'],
         });
@@ -165,7 +165,7 @@ input:
             type: string
 ---
 {{#each user}}{{@key}}: {{this}}{{#unless @last}}, {{/unless}}{{/each}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'user': {'name': 'John', 'age': 30, 'city': 'New York'},
         });
@@ -191,7 +191,7 @@ input:
             type: integer
 ---
 User info: {{json user}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'user': {'name': 'John', 'age': 30},
         });
@@ -213,7 +213,7 @@ input:
 You are a helpful AI assistant.
 {{role "user"}}
 {{question}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'question': "What's the weather like?",
         });
@@ -238,7 +238,7 @@ You are a helpful AI assistant.
 {{history}}
 {{role "user"}}
 What was my last question about?''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         // ignore: unused_local_variable
         final messages = [
           {'role': 'user', 'content': 'Tell me about Paris.'},
@@ -262,7 +262,7 @@ input:
 ---
 Describe this image:
 {{media url=imageUrl}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'imageUrl': 'https://example.com/image.jpg',
         });
@@ -280,7 +280,7 @@ input:
 This is the main content.
 {{section "output"}}
 This comes after the output instructions.''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({});
         expect(
           output,
@@ -310,7 +310,7 @@ You are an image analysis assistant.
 Analyze this image and user data:
 {{media url=imageUrl}}
 User context: {{json userData}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         // ignore: unused_local_variable
         final messages = [
           {'role': 'user', 'content': 'What do you see in this image?'},
@@ -341,7 +341,7 @@ input:
 Name: {{@metadata.prompt.name}}
 Model: {{@metadata.prompt.model}}
 {{#@metadata.messages}}{{content}}{{/@metadata.messages}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         // ignore: unused_local_variable
         final messages = [
           {'role': 'user', 'content': 'Hello'},
@@ -367,7 +367,7 @@ input:
 Literal: \{{name}}
 Unescaped: {{{name}}}
 Escaped: {{name}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({'name': '<b>John</b>'});
         expect(output, contains('Literal: {{name}}'));
         expect(output, contains('Unescaped: <b>John</b>'));
@@ -388,7 +388,7 @@ input:
 Header: {{>header}}
 Content: {{>content user}}
 Footer: {{>footer style="bold"}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'user': {'name': 'John', 'role': 'admin'},
         });
@@ -410,7 +410,7 @@ input:
 ---
 {{uppercase text}}
 {{lowercase text}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({'text': 'Hello World'});
         expect(output, contains('HELLO WORLD'));
         expect(output, contains('hello world'));
@@ -436,7 +436,7 @@ input:
         type: string
 ---
 {{greet name title}}''';
-          final dotPrompt = DotPrompt.fromString(promptString);
+          final dotPrompt = DotPrompt(promptString);
           final output = dotPrompt.render({'name': 'John', 'title': 'Dr'});
           expect(output, contains('Dr John'));
         },
@@ -456,7 +456,7 @@ input:
         type: string
 ---
 {{formatMoney amount=amount currency=currency decimals=2}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({'amount': 42.4242, 'currency': 'USD'});
         expect(output, contains(r'$42.42'));
       });
@@ -475,7 +475,7 @@ input:
         type: integer
 ---
 {{repeat text times=count separator=", "}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({'text': 'hello', 'count': 3});
         expect(output, contains('hello, hello, hello'));
       });
@@ -498,7 +498,7 @@ input:
     <li>{{this}}</li>
   {{/each}}
 {{/wrap}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'items': ['one', 'two', 'three'],
         });
@@ -528,7 +528,7 @@ input:
 {{else}}
   Access denied.
 {{/hasPermission}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'user': {'name': 'John', 'role': 'admin'},
         });
@@ -547,7 +547,7 @@ input:
         type: number
 ---
 {{validate value min=0 max=100}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         expect(
           () => dotPrompt.render({'value': 150}),
           throwsA(isA<TemplateException>()),
@@ -570,7 +570,7 @@ input:
         type: string
 ---
 {{#greeting}}{{greeting}} {{/greeting}}{{name}}!''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({'name': 'World', 'greeting': 'Hello'});
         expect(output, equals('Hello World!'));
       });
@@ -589,7 +589,7 @@ input:
         type: ["string", "null"]
 ---
 {{#greeting}}{{greeting}} {{/greeting}}{{name}}!''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({'name': 'World', 'greeting': null});
         expect(output, equals('World!'));
       });
@@ -606,7 +606,7 @@ input:
         type: boolean
 ---
 {{^isLoggedIn}}Please log in.{{/isLoggedIn}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({'isLoggedIn': false});
         expect(output, equals('Please log in.'));
       });
@@ -627,7 +627,7 @@ input:
           type: string
 ---
 {{#items}}- {{.}}{{/items}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
         final output = dotPrompt.render({
           'items': ['apple', 'banana', 'orange'],
         });
@@ -646,7 +646,7 @@ input:
 ---
 {{#items}}unclosed section''';
         expect(
-          () => DotPrompt.fromString(promptString).render({
+          () => DotPrompt(promptString).render({
             'items': [1, 2, 3],
           }),
           throwsA(isA<TemplateException>()),
@@ -663,7 +663,7 @@ input:
 ---
 {{#items}}content{{/wrong}}''';
         expect(
-          () => DotPrompt.fromString(promptString).render({
+          () => DotPrompt(promptString).render({
             'items': [1, 2, 3],
           }),
           throwsA(isA<TemplateException>()),
@@ -680,7 +680,7 @@ input:
 ---
 {{#missing}}content{{/missing}}''';
         expect(
-          () => DotPrompt.fromString(promptString).render({}),
+          () => DotPrompt(promptString).render({}),
           throwsA(isA<TemplateException>()),
         );
       });
@@ -702,7 +702,7 @@ input:
     required: [age]
 ---
 Age: {{age}}''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
 
         // Valid input
         expect(dotPrompt.render({'age': 25}), equals('Age: 25'));
@@ -739,7 +739,7 @@ input:
     greeting: "Hello"
 ---
 {{greeting}} {{name}}!''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
 
         // Without providing greeting
         expect(dotPrompt.render({'name': 'World'}), equals('Hello World!'));
@@ -769,7 +769,7 @@ input:
     age: 18
 ---
 {{name}} is {{age}} years old.''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
 
         // Using default age
         expect(
@@ -817,7 +817,7 @@ input:
         notifications: true
 ---
 {{user.name}} prefers {{user.settings.theme}} theme.''';
-        final dotPrompt = DotPrompt.fromString(promptString);
+        final dotPrompt = DotPrompt(promptString);
 
         // Using nested defaults
         expect(

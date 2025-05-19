@@ -85,11 +85,11 @@ import 'package:dotprompt_dart/dotprompt_dart.dart';
 
 void main() async {
   // Load from file
-  final greet = await DotPrompt.fromFile('prompts/greet.prompt');
+  final greet = await DotPrompt.file('prompts/greet.prompt');
   
   // Or load from string
   final promptString = '...';
-  final greetFromString = DotPrompt.fromString(promptString);
+  final greetFromString = DotPrompt(promptString);
   
   // Render the template
   final output = greet.render({'name': 'Chris'});
@@ -198,7 +198,7 @@ When rendering a template:
 For example:
 
 ```dart
-final prompt = DotPrompt.fromString(promptString);
+final prompt = DotPrompt(promptString);
 
 // Uses default greeting "Hello"
 prompt.render({'name': 'World'}); // => "Hello World!"

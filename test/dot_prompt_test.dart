@@ -9,7 +9,7 @@ void main() {
     late DotPrompt dotPrompt;
 
     setUpAll(() async {
-      dotPrompt = await DotPrompt.fromFile(promptPath);
+      dotPrompt = await DotPrompt.file(promptPath);
     });
 
     test('loads prompt front matter and template', () {
@@ -35,7 +35,7 @@ void main() {
     test('fromString parses prompt correctly', () async {
       final promptString =
           await File('example/prompts/greet.prompt').readAsString();
-      final dotPrompt = DotPrompt.fromString(promptString);
+      final dotPrompt = DotPrompt(promptString);
       final output = dotPrompt.render({'name': 'Chris'});
       expect(output, contains('Hello Chris!'));
 

@@ -21,7 +21,7 @@ void main() {
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.name, isNull);
         expect(prompt.frontMatter.model, isNull);
         expect(prompt.template, equals('Template content'));
@@ -29,7 +29,7 @@ Template content
 
       test('handles missing frontmatter', () {
         const input = 'Template content';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.name, isNull);
         expect(prompt.frontMatter.model, isNull);
         expect(prompt.template, equals('Template content'));
@@ -45,7 +45,7 @@ myext.multiline: |
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.name, 'test');
         // ignore: avoid_dynamic_calls
         expect(prompt.frontMatter.ext['myext']['multiline'], 'Line 1\nLine 2');
@@ -60,10 +60,7 @@ model: googleai/gemini-1.5-flash
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
     });
 
@@ -77,7 +74,7 @@ name: testPrompt
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.name, 'testPrompt');
       });
 
@@ -88,7 +85,7 @@ model: gemini-2.0-pro
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.model, 'gemini-2.0-pro');
       });
 
@@ -102,7 +99,7 @@ tools:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(
           prompt.frontMatter.tools,
           equals(['timeOfDay', 'weather', 'calendar']),
@@ -122,7 +119,7 @@ config:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(
           prompt.frontMatter.config['version'],
           equals('gemini-1.5-flash-latest'),
@@ -154,7 +151,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.input.schema, isNotNull);
         expect(prompt.frontMatter.input.schema!.typeName, 'object');
         expect(prompt.frontMatter.input.schema?.properties['name'], isNotNull);
@@ -177,7 +174,7 @@ output:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.output.schema, isNotNull);
         expect(prompt.frontMatter.output.schema!.typeName, 'object');
         expect(
@@ -201,7 +198,7 @@ output:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.input.defaults, isEmpty);
         expect(isSchemaEmpty(prompt.frontMatter.input.schema), isTrue);
         expect(isSchemaEmpty(prompt.frontMatter.output.schema), isTrue);
@@ -220,7 +217,7 @@ myext.nested.field: value
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.name, 'test');
         // ignore: avoid_dynamic_calls
         expect(prompt.frontMatter.ext['myext']['level'], 1);
@@ -236,10 +233,7 @@ customField: value
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
     });
 
@@ -254,7 +248,7 @@ variant: formal
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.variant, 'formal');
       });
     });
@@ -272,7 +266,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.input.defaults['name'], 'Guest');
         expect(prompt.frontMatter.input.defaults['language'], 'en');
       });
@@ -289,7 +283,7 @@ output:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.output.format, 'json');
       });
 
@@ -300,7 +294,7 @@ output: {}
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.output.format, 'text');
       });
     });
@@ -317,7 +311,7 @@ metadata:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         // ignore: avoid_dynamic_calls
         expect(prompt.frontMatter.metadata['customKey']['customValue'], 123);
       });
@@ -334,7 +328,7 @@ myext.level1.level2.level3.field: value
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         // ignore: avoid_dynamic_calls
         expect(
           // ignore: avoid_dynamic_calls
@@ -353,7 +347,7 @@ myext.array: [1, 2, 3]
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         // ignore: avoid_dynamic_calls
         expect(prompt.frontMatter.ext['myext']['array'], [1, 2, 3]);
       });
@@ -371,7 +365,7 @@ config:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.model, 'googleai/gemini-1.5-flash');
         expect(prompt.frontMatter.config['version'], 'gemini-1.5-flash-latest');
       });
@@ -392,7 +386,7 @@ Template content
           'variant': 'default',
           'config': {'temperature': 0.5, 'topK': 40},
         };
-        final prompt = DotPrompt.fromString(input, defaults: defaults);
+        final prompt = DotPrompt(input, defaults: defaults);
         expect(prompt.frontMatter.name, 'defaultPrompt');
         expect(prompt.frontMatter.variant, 'default');
         expect(
@@ -415,7 +409,7 @@ Template content
           'customField': 'value', // Non-standard field
         };
         expect(
-          () => DotPrompt.fromString(input, defaults: defaults),
+          () => DotPrompt(input, defaults: defaults),
           throwsA(isA<FormatException>()),
         );
       });
@@ -437,7 +431,7 @@ Template content
           'variant': 'defaultVariant',
           'config': {'temperature': 0.5, 'topK': 40},
         };
-        final prompt = DotPrompt.fromString(input, defaults: defaults);
+        final prompt = DotPrompt(input, defaults: defaults);
         expect(prompt.frontMatter.name, 'explicitName');
         expect(prompt.frontMatter.variant, 'explicitVariant');
         expect(prompt.frontMatter.model, 'gemini-2.0-pro');
@@ -457,7 +451,7 @@ config:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.model, 'googleai/gemini-1.5-flash');
         expect(
           prompt.frontMatter.config['version'],
@@ -476,7 +470,7 @@ config:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.config['maxOutputTokens'], 1000);
       });
 
@@ -488,7 +482,7 @@ config:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.config['temperature'], 0.7);
       });
 
@@ -501,7 +495,7 @@ config:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.config['topK'], 20);
         expect(prompt.frontMatter.config['topP'], 0.8);
       });
@@ -523,7 +517,7 @@ output:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         expect(prompt.frontMatter.output.format, 'json');
         expect(
           prompt.frontMatter.output.schema?.properties['result']?.format,
@@ -542,7 +536,7 @@ myext.level1.level2.level3.level4.array: [1, 2, 3]
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final ext = prompt.frontMatter.ext['myext'] as Map<String, dynamic>;
         final level1 = ext['level1'] as Map<String, dynamic>;
         final level2 = level1['level2'] as Map<String, dynamic>;

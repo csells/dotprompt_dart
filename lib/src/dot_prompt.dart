@@ -26,14 +26,8 @@ class ValidationException implements Exception {
 
 /// The main class for working with .prompt files.
 class DotPrompt {
-  DotPrompt._({required this.frontMatter, required String template})
-    : _template = Template(template, htmlEscapeValues: false);
-
   /// Loads a .prompt from a string content.
-  factory DotPrompt.fromString(
-    String content, {
-    Map<String, dynamic>? defaults,
-  }) {
+  factory DotPrompt(String content, {Map<String, dynamic>? defaults}) {
     final parts = content.split('---');
     var front = <String, dynamic>{};
     var template = content;
@@ -54,14 +48,16 @@ class DotPrompt {
     // Apply defaults from filename
     front = _applyDefaults(frontMatter: front, defaults: defaults);
 
-    return DotPrompt._(
+    return DotPrompt._parts(
       frontMatter: DotPromptFrontMatter.fromMap(front),
       template: template,
     );
   }
+  DotPrompt._parts({required this.frontMatter, required String template})
+    : _template = Template(template, htmlEscapeValues: false);
 
   /// Loads a .prompt file from the given path.
-  static Future<DotPrompt> fromFile(
+  static Future<DotPrompt> file(
     String filePath, {
     Map<String, dynamic>? defaults,
   }) async {
@@ -79,7 +75,7 @@ class DotPrompt {
       defaults['name'] = basename;
     }
 
-    return DotPrompt.fromString(content, defaults: defaults);
+    return DotPrompt(content, defaults: defaults);
   }
 
   // Applies default values from default settings.
@@ -109,7 +105,7 @@ class DotPrompt {
 
   /// Renders the template with the given input data.
   /// Throws [ValidationException] if the input data fails schema validation.
-  String render(Map<String, dynamic> input) {
+  String render([Map<String, dynamic> input = const {}]) {
     // Merge defaults with input, letting input override defaults
     final mergedInput = Map<String, dynamic>.from(frontMatter.input.defaults);
     mergedInput.addAll(input);

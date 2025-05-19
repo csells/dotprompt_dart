@@ -105,7 +105,7 @@ The following template features are not yet implemented but planned for future r
 * Provide a simple call to load from files and strings, e.g. here for files:
 
 ```dart
-final greet = await DotPrompt.fromFile('prompts/greet.prompt');
+final greet = await DotPrompt.file('prompts/greet.prompt');
 final meta = greet.metadata; // the model info, settings, etc.
 final prompt = greet.render({'name': 'Chris'}); // validates input and expands the prompt string
 

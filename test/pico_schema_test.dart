@@ -23,7 +23,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
 
         final expectedSchema = {
           'type': 'object',
@@ -50,7 +50,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -75,7 +75,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -100,7 +100,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -128,7 +128,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -156,7 +156,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -181,7 +181,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -209,7 +209,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -244,7 +244,7 @@ Template content
           },
         };
 
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final inputSchema =
             jsonDecode(prompt.frontMatter.input.schema!.toJson())
                 as Map<String, dynamic>;
@@ -262,7 +262,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -295,7 +295,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -324,7 +324,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -355,7 +355,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -395,7 +395,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -455,7 +455,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -508,7 +508,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -549,7 +549,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -580,7 +580,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -615,7 +615,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -645,7 +645,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final schema = prompt.frontMatter.input.schema;
         expect(schema, isNotNull);
         expect(schema!.typeName, 'object');
@@ -667,7 +667,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -711,7 +711,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -747,7 +747,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -773,7 +773,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -820,7 +820,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -864,7 +864,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -903,7 +903,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -932,7 +932,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -966,7 +966,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -993,7 +993,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -1023,7 +1023,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -1056,7 +1056,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -1093,10 +1093,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid parenthetical types', () {
@@ -1110,10 +1107,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects non-object/non-string values', () {
@@ -1127,10 +1121,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects malformed YAML syntax', () {
@@ -1145,10 +1136,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid JSON Schema', () {
@@ -1162,10 +1150,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects missing required fields', () {
@@ -1180,10 +1165,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid type combinations', () {
@@ -1197,10 +1179,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid enum syntax', () {
@@ -1214,10 +1193,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid wildcard field syntax', () {
@@ -1232,10 +1208,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       //       test('rejects circular references in objects', () {
@@ -1257,7 +1230,7 @@ Template content
       // Template content
       // ''';
       //         expect(
-      //           () => DotPrompt.fromString(input),
+      //           () => DotPrompt(input),
       //           throwsA(isA<FormatException>()),
       //         );
       //       });
@@ -1274,10 +1247,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid type combinations in arrays', () {
@@ -1291,10 +1261,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid wildcard field combinations', () {
@@ -1310,10 +1277,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid array element types', () {
@@ -1327,10 +1291,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
 
       test('rejects invalid object property types', () {
@@ -1344,10 +1305,7 @@ input:
 ---
 Template content
 ''';
-        expect(
-          () => DotPrompt.fromString(input),
-          throwsA(isA<FormatException>()),
-        );
+        expect(() => DotPrompt(input), throwsA(isA<FormatException>()));
       });
     });
 
@@ -1367,7 +1325,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -1398,7 +1356,7 @@ input:
 Template content
 ''';
         expect(
-          () => DotPrompt.fromString(input),
+          () => DotPrompt(input),
           throwsA(
             isA<FormatException>().having(
               (e) => e.message,
@@ -1422,7 +1380,7 @@ input:
 Template content
 ''';
         expect(
-          () => DotPrompt.fromString(input),
+          () => DotPrompt(input),
           throwsA(
             isA<FormatException>().having(
               (e) => e.message,
@@ -1471,7 +1429,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -1531,7 +1489,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
@@ -1562,7 +1520,7 @@ input:
 ---
 Template content
 ''';
-        final prompt = DotPrompt.fromString(input);
+        final prompt = DotPrompt(input);
         final expectedSchema = {
           'type': 'object',
           'properties': {
