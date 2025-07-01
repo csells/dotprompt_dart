@@ -9,7 +9,8 @@ void main() {
     late DotPrompt dotPrompt;
 
     setUpAll(() async {
-      dotPrompt = await DotPrompt.file(promptPath);
+      final file = File(promptPath);
+      dotPrompt = await DotPrompt.stream(file.openRead(), name: promptPath);
     });
 
     test('loads prompt front matter and template', () {

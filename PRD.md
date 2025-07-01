@@ -102,10 +102,10 @@ The following template features are not yet implemented but planned for future r
   3. Validate the merged data against the compiled JSON Schema
   4. If validation fails, throw a `ValidationException` with detailed error messages
   5. After validation passes, use the merged data for template rendering
-* Provide a simple call to load from files and strings, e.g. here for files:
+* Provide a simple call to load from files and strings. **As of 0.3.0, for web and wasm compatibility, use `DotPrompt.stream` instead of `DotPrompt.file`.** Example:
 
 ```dart
-final greet = await DotPrompt.file('prompts/greet.prompt');
+final greet = await DotPrompt.stream(File('prompts/greet.prompt').openRead(), name: 'prompts/greet.prompt');
 final meta = greet.metadata; // the model info, settings, etc.
 final prompt = greet.render({'name': 'Chris'}); // validates input and expands the prompt string
 

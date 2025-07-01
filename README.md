@@ -42,13 +42,40 @@ going to get out a `JsonSchema` object for your use.
 - Extension Support: Custom configuration through namespaced keys (e.g.,
   `myext.temperature`)
 
+
+## Migrating from 0.2.0 to 0.3.0
+
+Version 0.3.0 introduces web and wasm compatibility by replacing the
+`DotPrompt.file(filename)` constructor with `DotPrompt.stream(bytes, name:
+filename)`. This change allows you to load prompt files from any byte stream,
+not just the file system, making it compatible with browsers and other
+platforms.
+
+**Migration Example:**
+
+```dart
+// Old code (0.2.0)
+const filename = 'example/prompts/greet.prompt';
+final prompt = await DotPrompt.file(filename);
+
+// New code (0.3.0+)
+const filename = 'example/prompts/greet.prompt';
+final prompt = await DotPrompt.stream(File(filename).openRead(), name: filename);
+```
+
+- The new API works with any `Stream<List<int>>`, so you can load prompts from
+  assets, network, or other sources.
+- The `name` parameter is optional but recommended for metadata and default
+  inference.
+- This change is required for web/wasm compatibility.
+
 ## Getting Started
 
 Add `dotprompt_dart` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  dotprompt_dart: ^0.1.0
+  dotprompt_dart: ^VERSION
 ```
 
 ## Usage
@@ -82,10 +109,11 @@ Hello {{name}}! How are you today?
 
 ```dart
 import 'package:dotprompt_dart/dotprompt_dart.dart';
+import 'dart:io';
 
 void main() async {
-  // Load from file
-  final greet = await DotPrompt.file('prompts/greet.prompt');
+  // Load from file (0.3.0+)
+  final greet = await DotPrompt.stream(File('prompts/greet.prompt').openRead(), name: 'prompts/greet.prompt');
   
   // Or load from string
   final promptString = '...';

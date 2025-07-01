@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:mustache_template/mustache_template.dart';
 import 'package:path/path.dart' as path;
@@ -56,21 +56,18 @@ class DotPrompt {
   DotPrompt._parts({required this.frontMatter, required String template})
     : _template = Template(template, htmlEscapeValues: false);
 
-  /// Loads a .prompt file from the given path.
-  static Future<DotPrompt> file(
-    String filePath, {
+  /// Loads a .prompt file from a stream.
+  static Future<DotPrompt> stream(
+    Stream<List<int>> stream, {
+    String? name,
     Map<String, dynamic>? defaults,
   }) async {
-    final file = File(filePath);
-    if (!file.existsSync()) {
-      throw FileSystemException('File not found', filePath);
-    }
+    final bytes = await stream.reduce((a, b) => a + b);
+    final content = utf8.decode(bytes);
 
-    final content = await file.readAsString();
-
-    // Apply filename-based defaults
+    // Apply name-based defaults
     if (defaults != null && !defaults.containsKey('name')) {
-      final basename = path.basenameWithoutExtension(filePath);
+      final basename = path.basenameWithoutExtension(name ?? '');
       defaults = Map.from(defaults);
       defaults['name'] = basename;
     }
