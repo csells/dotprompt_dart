@@ -2,6 +2,7 @@ name: dotprompt_dart
 description: A Dart package for parsing .prompt files for use with LLMs.
 version: 0.4.0
 repository: https://github.com/csells/dotprompt_dart
+homepage: https://github.com/csells/dotprompt_dart
 
 environment:
   sdk: ^3.7.2
