@@ -11,7 +11,7 @@ after [Google's dotprompt library](https://github.com/google/dotprompt).
 Google's implementation supports Go, Java, Javascript and Python, whereas this
 implementation supports Dart. Also, Google's implementation is used as part of
 the implementation for GenKit, which also supports those other languages, but
-not Dart. 
+not Dart.
 
 Unlike Google's implementation, this implementation doesn't do the execution of
 model prompts; instead, it uses dartantic_ai for the execution. You can
@@ -41,7 +41,6 @@ going to get out a `JsonSchema` object for your use.
   template rendering as well as to provide type info for model output
 - Extension Support: Custom configuration through namespaced keys (e.g.,
   `myext.temperature`)
-
 
 ## Migrating from 0.2.0 to 0.3.0
 
@@ -101,8 +100,7 @@ output:
 myext.description: A simple greeting prompt
 myext.temperature: 0.7
 ---
-
-Hello {{name}}! How are you today? 
+Hello {{name}}! How are you today?
 ```
 
 2. Load and use the prompt in your Dart code:
@@ -114,15 +112,15 @@ import 'dart:io';
 void main() async {
   // Load from file (0.3.0+)
   final greet = await DotPrompt.stream(File('prompts/greet.prompt').openRead(), name: 'prompts/greet.prompt');
-  
+
   // Or load from string
   final promptString = '...';
   final greetFromString = DotPrompt(promptString);
-  
+
   // Render the template
   final output = greet.render({'name': 'Chris'});
   print(output); // Hello Chris! How are you today?
-  
+
   // Access front-matter metadata
   print(greet.frontMatter.name); // greet
   print(greet.frontMatter.model); // gemini-2.0-pro
@@ -169,7 +167,7 @@ input:
         type: string
         description: The name of the user
       age:
-        type: [integer, "null"]  # Optional field using union type
+        type: [integer, "null"] # Optional field using union type
       settings:
         type: object
         properties:
@@ -182,13 +180,14 @@ input:
         type: array
         items:
           type: string
-    additionalProperties: true  # Equivalent to (*): any
+    additionalProperties: true # Equivalent to (*): any
 ```
 
 ### Schema Detection and Conversion
 
 Both Pico Schema and JSON Schema result in a valid `JsonSchema` object that can
 be used for:
+
 - Input validation before template rendering
 - Output validation after LLM responses
 - Type-safe code generation (upcoming feature)
@@ -207,16 +206,17 @@ input:
       name:
         type: string
       greeting:
-        type: ["string", "null"]  # Optional field that can be null
+        type: ["string", "null"] # Optional field that can be null
       age:
         type: integer
         minimum: 0
-    required: [name]  # Only name is required
+    required: [name] # Only name is required
   default:
-    greeting: "Hello"  # Used when greeting is not provided
+    greeting: "Hello" # Used when greeting is not provided
 ```
 
 When rendering a template:
+
 1. Default values are merged with provided input (input values take precedence)
 2. The combined input is validated against the schema
 3. If validation fails, a `ValidationException` is thrown with detailed error
@@ -238,6 +238,73 @@ prompt.render({'name': 'World', 'greeting': 'Hi'}); // => "Hi World!"
 prompt.render({'greeting': 'Hi'});
 ```
 
+### Partials
+
+The `mustache_template` engine supports partials, which are reusable snippets of
+template code. You can include a partial in your template using the `{{> partialName }}` syntax.
+
+To resolve these partials, you need to provide an implementation of the
+`DotPromptPartialResolver` class to the `DotPrompt` constructor.
+
+For applications with access to `dart:io` (e.g., command-line or server-side),
+you can use the included `PathPartialResolver`. This class searches for partial
+files in a list of specified directories. It will look for files named
+`partialName.prompt` or `partialName.mustache`.
+
+Here's how you can use it:
+
+**`prompts/main.prompt`**
+
+```mustache
+---
+name: main
+---
+This is the main prompt.
+Here is the partial: {{> my_partial }}
+```
+
+**`prompts/partials/_my_partial.prompt`**
+
+```mustache
+This is the content from the partial file!
+```
+
+**Dart Code:**
+
+```dart
+import 'dart:io';
+import 'package:dotprompt_dart/dotprompt_dart.dart';
+import 'package:dotprompt_dart/src/path_partial_resolver.dart';
+
+void main() async {
+  final mainPromptContent = await File('prompts/main.prompt').readAsString();
+
+  // Create a resolver that looks in the 'prompts/partials' directory.
+  final resolver = PathPartialResolver([Directory('prompts/partials')]);
+
+  final prompt = DotPrompt(
+    mainPromptContent,
+    partialResolver: resolver,
+  );
+
+  final output = prompt.render({});
+  print(output);
+  // This is the main prompt.
+  // Here is the partial: This is the content from the partial file!
+}
+```
+
+Which will produce the following output:
+
+```txt
+This is the main prompt.
+Here is the partial: Here is the content from the partial file!
+```
+
+For web applications, you'll need to create your own subclass of
+`DotPromptPartialResolver` that can load partials from your assets or another
+source.
+
 ## Handlebar Implementation Shortcomings
 
 The template expansion used in the current version of dotprompt_dart is based on
@@ -249,12 +316,14 @@ unfortunately it is not
 Here's a list of the current short-comings that I know about:
 
 ### Built-in Handlebars Helpers
+
 - `#if` conditional blocks
 - `else` blocks
 - `#unless` blocks
 - `#each` iteration with `@index`, `@first`, `@last` support
 
 ### Dotprompt Helpers
+
 - `json` helper for JSON serialization
 - `role` helper for multi-message prompts
 - `history` helper for conversation context
@@ -262,6 +331,7 @@ Here's a list of the current short-comings that I know about:
 - `section` helper for content positioning
 
 ### Custom Helpers
+
 - Basic helpers with positional args
 - Named argument support
 - Block helpers
@@ -269,6 +339,7 @@ Here's a list of the current short-comings that I know about:
 - Error handling
 
 ### Context Variables
+
 - `@metadata` access to prompt configuration
 - `@root` context reference
 - Message history access via `@metadata.messages`

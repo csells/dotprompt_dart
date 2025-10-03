@@ -6,6 +6,8 @@ import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
 
 import 'dot_prompt_front_matter.dart';
+import 'partial_resolver.dart';
+import 'path_partial_resolver.dart';
 import 'utility.dart';
 
 /// Exception thrown when input data fails schema validation.
@@ -27,7 +29,15 @@ class ValidationException implements Exception {
 /// The main class for working with .prompt files.
 class DotPrompt {
   /// Loads a .prompt from a string content.
-  factory DotPrompt(String content, {Map<String, dynamic>? defaults}) {
+  ///
+  /// Takes an optional [partialResolver] which can resolve dotprompt partial
+  /// files. Supply a [PathPartialResolver] in applications that can use
+  /// dart:io.
+  factory DotPrompt(
+    String content, {
+    Map<String, dynamic>? defaults,
+    DotPromptPartialResolver? partialResolver,
+  }) {
     final parts = content.split('---');
     var front = <String, dynamic>{};
     var template = content;
@@ -51,16 +61,26 @@ class DotPrompt {
     return DotPrompt._parts(
       frontMatter: DotPromptFrontMatter.fromMap(front),
       template: template,
+      partialResolver: partialResolver,
     );
   }
-  DotPrompt._parts({required this.frontMatter, required String template})
-    : _template = Template(template, htmlEscapeValues: false);
+
+  DotPrompt._parts({
+    required this.frontMatter,
+    required String template,
+    DotPromptPartialResolver? partialResolver,
+  }) : _template = Template(
+         template,
+         htmlEscapeValues: false,
+         partialResolver: partialResolver?.resolve,
+       );
 
   /// Loads a .prompt file from a stream.
   static Future<DotPrompt> stream(
     Stream<List<int>> stream, {
     String? name,
     Map<String, dynamic>? defaults,
+    DotPromptPartialResolver? partialResolver,
   }) async {
     final bytes = await stream.reduce((a, b) => a + b);
     final content = utf8.decode(bytes);
@@ -72,7 +92,11 @@ class DotPrompt {
       defaults['name'] = basename;
     }
 
-    return DotPrompt(content, defaults: defaults);
+    return DotPrompt(
+      content,
+      defaults: defaults,
+      partialResolver: partialResolver,
+    );
   }
 
   // Applies default values from default settings.
