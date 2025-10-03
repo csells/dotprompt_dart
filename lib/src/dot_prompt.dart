@@ -1,3 +1,6 @@
+/// @docImport 'path_partial_resolver.dart';
+library;
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -7,7 +10,6 @@ import 'package:yaml/yaml.dart';
 
 import 'dot_prompt_front_matter.dart';
 import 'partial_resolver.dart';
-import 'path_partial_resolver.dart';
 import 'utility.dart';
 
 /// Exception thrown when input data fails schema validation.
