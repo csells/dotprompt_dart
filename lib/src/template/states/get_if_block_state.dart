@@ -3,6 +3,7 @@ import '../errors_types.dart';
 import '../notify_types.dart';
 import '../template_context.dart';
 import '../template_error.dart';
+import '../template_machine.dart';
 import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
@@ -11,14 +12,22 @@ import 'get_block_end_state.dart';
 import 'get_if_condition_state.dart';
 
 class GetIfBlockState extends TemplateState {
-  GetIfBlockState({required this.symbol, required this.line}) {
+  GetIfBlockState({
+    required this.symbol,
+    required this.line,
+    this.inverted = false,
+    this.blockName = 'if',
+  }) {
     methods = {'process': process, 'notify': notify};
   }
   final int symbol;
   final int line;
+  final bool inverted;
+  final String blockName;
 
   bool _res = false;
   String _body = '';
+  String _elseBody = '';
 
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
@@ -54,10 +63,18 @@ class GetIfBlockState extends TemplateState {
         }
 
       case notifySecondCloseBracketFound:
-        return TemplateResult(state: GetBlockEndState(blockName: 'if'));
+        return TemplateResult(state: GetBlockEndState(blockName: blockName));
 
       case notifyBlockEndResult:
-        _body = msg.value;
+        final fullBody = msg.value as String;
+        // Check if there's an {{else}} tag - split on it if found
+        final elseIndex = fullBody.indexOf('{{else}}');
+        if (elseIndex != -1) {
+          _body = fullBody.substring(0, elseIndex);
+          _elseBody = fullBody.substring(elseIndex + 8); // Skip '{{else}}'
+        } else {
+          _body = fullBody;
+        }
         return result(context);
 
       default:
@@ -76,13 +93,26 @@ class GetIfBlockState extends TemplateState {
   TemplateResult result(TemplateContext context) {
     var res = '';
 
-    if (_res) {
-      try {
-        final fn = context.compile(_body);
+    // Apply inverted logic if this is an 'unless' block
+    final shouldRender = inverted ? !_res : _res;
 
-        if (fn != null) {
-          res = fn(context.data);
-        }
+    if (shouldRender) {
+      try {
+        final machine = TemplateMachine(_body);
+        res = machine.run(context);
+      } catch (e) {
+        return TemplateResult(
+          err: TemplateError(
+            code: errorIfBlockMalformed,
+            text: 'If block error: $e',
+          ),
+        );
+      }
+    } else if (_elseBody.isNotEmpty) {
+      // Render else body if condition is false
+      try {
+        final machine = TemplateMachine(_elseBody);
+        res = machine.run(context);
       } catch (e) {
         return TemplateResult(
           err: TemplateError(

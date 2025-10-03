@@ -30,7 +30,8 @@ class GetAttributeState extends TemplateState {
       );
     } else if ((charCode >= 65 && charCode <= 90) ||
         (charCode >= 97 && charCode <= 122) ||
-        charCode == 95) {
+        charCode == 95 ||
+        charCode == 64) { // Allow @ for context variables
       return TemplateResult(
         pop: true,
         message: InitMessage(value: String.fromCharCode(charCode)),

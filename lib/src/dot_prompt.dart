@@ -4,12 +4,12 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:mustache_template/mustache_template.dart';
 import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
 
 import 'dot_prompt_front_matter.dart';
 import 'partial_resolver.dart';
+import 'template/template.dart';
 import 'utility.dart';
 
 /// Exception thrown when input data fails schema validation.

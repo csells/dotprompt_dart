@@ -3,6 +3,7 @@ import '../errors_types.dart';
 import '../notify_types.dart';
 import '../template_context.dart';
 import '../template_error.dart';
+import '../template_machine.dart';
 import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
@@ -81,23 +82,62 @@ class GetEachBlockState extends TemplateState {
 
         if (data != null) {
           if (data is List || data is Map) {
-            final fn = context.compile(_body);
+            final buffer = StringBuffer();
 
-            var res = '';
+            if (data is List) {
+              for (var i = 0; i < data.length; i++) {
+                final item = data[i];
+                // Create context with 'this' and iteration variables
+                final itemData = item is Map
+                    ? {...item, 'this': item}
+                    : {'this': item};
 
-            if (fn != null) {
-              if (data is List) {
-                for (final item in data) {
-                  res += fn(item);
-                }
-              } else {
-                data.forEach((key, item) {
-                  res += fn(item);
-                });
+                // Add iteration context variables
+                itemData['@index'] = i;
+                itemData['@first'] = i == 0;
+                itemData['@last'] = i == data.length - 1;
+
+                final itemContext = TemplateContext(
+                  itemData,
+                  context.helpers as Map<String, Function(List<dynamic>, Function?)>?,
+                  context.opt('options'),
+                  null,
+                  context.resolvePartial,
+                );
+
+                final machine = TemplateMachine(_body);
+                buffer.write(machine.run(itemContext));
+              }
+            } else {
+              var index = 0;
+              final keys = data.keys.toList();
+              for (final key in keys) {
+                final item = data[key];
+                // Create context with 'this', '@key', and iteration variables
+                final itemData = item is Map
+                    ? {...item, 'this': item}
+                    : {'this': item};
+
+                itemData['@key'] = key;
+                itemData['@index'] = index;
+                itemData['@first'] = index == 0;
+                itemData['@last'] = index == keys.length - 1;
+
+                final itemContext = TemplateContext(
+                  itemData,
+                  context.helpers as Map<String, Function(List<dynamic>, Function?)>?,
+                  context.opt('options'),
+                  null,
+                  context.resolvePartial,
+                );
+
+                final machine = TemplateMachine(_body);
+                buffer.write(machine.run(itemContext));
+                index++;
               }
             }
 
-            return TemplateResult(result: res, pop: true);
+            return TemplateResult(result: buffer.toString(), pop: true);
           } else {
             result.err = TemplateError(
               text: '"each" block data should have "List" or "Map" type',

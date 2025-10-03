@@ -4,16 +4,19 @@ class TemplateContext {
     Map<String, Function(List<dynamic>, Function?)>? helpers,
     Map<String, dynamic>? options,
     Function(String)? fn,
+    String? Function(String)? partialResolver,
   ]) {
     _data = data;
     _helpers = helpers;
     _options = options;
     _fn = fn;
+    _partialResolver = partialResolver;
   }
   Map? _data;
   Map<String, Function(List<dynamic>, Function?)>? _helpers;
   Map<String, dynamic>? _options;
   Function(String)? _fn;
+  String? Function(String)? _partialResolver;
   int symbol = 0;
   int line = 0;
 
@@ -46,13 +49,31 @@ class TemplateContext {
     return null;
   }
 
+  /// returns partial template source for the given partial name
+  String? resolvePartial(String partialName) {
+    if (_partialResolver != null) {
+      return _partialResolver!(partialName);
+    }
+
+    return null;
+  }
+
   /// returns a value from context.data by given path
   dynamic get(String path) {
+    if (_data == null) return null;
+
+    // Handle special case of '.' which means "current context"
+    if (path == '.') {
+      // If data contains a '.' key, return that value; otherwise return the whole data
+      if (_data is Map && _data!.containsKey('.')) {
+        return _data!['.'];
+      }
+      return _data;
+    }
+
     final query = path.split('.');
     dynamic res;
     var depth = 0;
-
-    if (_data == null) return null;
 
     if (query.length == 1 && _data!.containsKey(path)) {
       res = _data![path];

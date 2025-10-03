@@ -7,6 +7,7 @@ import '../template_state.dart';
 import 'get_block_sequence_type_state.dart';
 import 'get_data_state.dart';
 import 'get_helper_state.dart';
+import 'get_partial_state.dart';
 import 'get_sequence_state.dart';
 import 'open_bracket_state.dart';
 
@@ -51,7 +52,11 @@ class RootState extends TemplateState {
         res.state = GetHelperState();
       case notifyIsBlockSequence: // done
         res.message = InitMessage();
-        res.state = GetBlockSequenceTypeState();
+        // Check if this is an inverted section (value will be '^')
+        final inverted = msg.value == '^';
+        res.state = GetBlockSequenceTypeState(inverted: inverted);
+      case notifyIsPartialSequence: // done
+        res.state = GetPartialState();
       case notifyIsDataSequence: // done
         res.state = GetDataState();
         res.message = InitMessage(value: msg.value);

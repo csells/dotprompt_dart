@@ -9,12 +9,15 @@ import 'get_block_helper_state.dart';
 import 'get_block_name_state.dart';
 import 'get_each_block_state.dart';
 import 'get_if_block_state.dart';
+import 'get_section_state.dart';
 import 'get_with_block_state.dart';
 
 class GetBlockSequenceTypeState extends TemplateState {
-  GetBlockSequenceTypeState() {
+  GetBlockSequenceTypeState({this.inverted = false}) {
     methods = {'init': init, 'process': process, 'notify': notify};
   }
+
+  final bool inverted;
 
   TemplateResult init(InitMessage msg, TemplateContext context) =>
       TemplateResult(state: GetBlockNameState());
@@ -42,11 +45,22 @@ class GetBlockSequenceTypeState extends TemplateState {
           message: ProcessMessage(charCode: msg.charCode!),
         );
 
+        // Only spec-defined blocks are supported: if, unless, each, with
+        // Everything else must be a registered helper
         switch (blockName) {
           case 'if':
             res.state = GetIfBlockState(
               line: context.line,
               symbol: context.symbol,
+            );
+
+          case 'unless':
+            // 'unless' is like an inverted 'if' - implement it here
+            res.state = GetIfBlockState(
+              line: context.line,
+              symbol: context.symbol,
+              inverted: true,
+              blockName: 'unless',
             );
 
           case 'with':
@@ -62,6 +76,7 @@ class GetBlockSequenceTypeState extends TemplateState {
             );
 
           default:
+            // Must be a registered helper
             res.state = GetBlockHelperState(
               helper: blockName,
               line: context.line,

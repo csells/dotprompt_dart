@@ -15,3 +15,5 @@ const notifyNameResult = 11;
 const notifyAttrResult = 12;
 const notifyBlockEndResult = 13;
 const notifyConditionResult = 14;
+const notifyIsPartialSequence = 15;
+const notifyElseFound = 16;

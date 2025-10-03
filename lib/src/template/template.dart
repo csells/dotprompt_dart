@@ -1,3 +1,4 @@
+import 'built_in_helpers.dart';
 import 'template_context.dart';
 import 'template_machine.dart';
 
@@ -17,8 +18,10 @@ export 'states/get_helper_state.dart';
 export 'states/get_if_block_state.dart';
 export 'states/get_if_condition_state.dart';
 export 'states/get_number_attribute.dart';
+export 'states/get_partial_state.dart';
 export 'states/get_path_attribute.dart';
 export 'states/get_path_state.dart';
+export 'states/get_section_state.dart';
 export 'states/get_sequence_state.dart';
 export 'states/get_string_attribute.dart';
 export 'states/get_with_block_state.dart';
@@ -33,6 +36,25 @@ export 'template_state.dart';
 
 /// Template is a Handlebars-like template engine for Dart.
 class Template {
+  /// Creates a template with optional partial resolver.
+  Template(
+    this.source, {
+    bool htmlEscapeValues = true,
+    String? Function(String)? partialResolver,
+  })  : _htmlEscapeValues = htmlEscapeValues,
+        _partialResolver = partialResolver {
+    // Register built-in helpers
+    final builtInHelpers = getBuiltInHelpers();
+    for (final entry in builtInHelpers.entries) {
+      _helpers[entry.key] = entry.value;
+    }
+  }
+
+  /// The template source.
+  final String source;
+
+  final bool _htmlEscapeValues;
+  final String? Function(String)? _partialResolver;
   final Map<String, Function(List<dynamic>, Function?)> _helpers = {};
   final Map<String, dynamic> _options = {
     'ignoreUnregisteredHelperErrors': false,
@@ -50,9 +72,21 @@ class Template {
 
   /// Render a template with the given data
   String render(String template, Map<String, dynamic> data) {
-    final context = TemplateContext(data, _helpers, _options);
+    // Create context with partial resolver
+    final context = TemplateContext(
+      data,
+      _helpers,
+      _options,
+      null, // compile function
+      _partialResolver, // partial resolver
+    );
 
     final machine = TemplateMachine(template);
     return machine.run(context);
+  }
+
+  /// Render the template using its source with the given data
+  String renderString(Map<String, dynamic> data) {
+    return render(source, data);
   }
 }

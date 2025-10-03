@@ -18,3 +18,4 @@ const more = 62; // >
 const less = 60; // <
 const equal = 61; // =
 const exclMark = 33; // !
+const caret = 94; // ^

@@ -19,12 +19,15 @@ class GetPathAttribute extends TemplateState {
   TemplateResult? notify(NotifyMessage msg, TemplateContext context) {
     switch (msg.type) {
       case notifyPathResult:
+        // If the value is a Map, it's a named argument (key=value)
+        // Otherwise it's a path that needs to be resolved from context
+        final value = msg.value is Map ? msg.value : context.get(msg.value);
         return TemplateResult(
           pop: true,
           message: NotifyMessage(
             charCode: msg.charCode,
             type: notifyAttrResult,
-            value: context.get(msg.value),
+            value: value,
           ),
         );
     }

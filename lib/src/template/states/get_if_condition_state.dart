@@ -30,6 +30,17 @@ class GetIfConditionState extends TemplateState {
         ),
       );
     } else if (charCode == closeBracket) {
+      // If we have leftPart (even if null), that's valid - it's a simple truthy check
+      if (_state >= 1) {
+        return TemplateResult(
+          pop: true,
+          message: NotifyMessage(
+            value: checkCondition(),
+            type: notifyConditionResult,
+            charCode: charCode,
+          ),
+        );
+      }
       return TemplateResult(
         err: TemplateError(
           text: 'If block condition malformed',
@@ -70,6 +81,13 @@ class GetIfConditionState extends TemplateState {
         if (_state == 0) {
           leftPart = msg.value;
           _state++;
+
+          // Reprocess the charCode to continue parsing
+          if (msg.charCode != null) {
+            return TemplateResult(
+              message: ProcessMessage(charCode: msg.charCode!),
+            );
+          }
         } else if (_state == 2) {
           rightPart = msg.value;
 
@@ -87,12 +105,6 @@ class GetIfConditionState extends TemplateState {
               text: 'If block condition malformed',
               code: errorIfBlockMalformed,
             ),
-          );
-        }
-
-        if (msg.charCode != null) {
-          return TemplateResult(
-            message: ProcessMessage(charCode: msg.charCode!),
           );
         }
 
@@ -120,6 +132,12 @@ class GetIfConditionState extends TemplateState {
   }
 
   bool checkCondition() {
+    // If no condition operator, just check truthiness of leftPart
+    if (condition == null) {
+      return _isTruthy(leftPart);
+    }
+
+    // Otherwise, perform comparison
     switch (condition) {
       case '<':
         return leftPart < rightPart;
@@ -136,5 +154,16 @@ class GetIfConditionState extends TemplateState {
       default:
         return false;
     }
+  }
+
+  /// Checks if a value is truthy according to Handlebars semantics
+  bool _isTruthy(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is String) return value.isNotEmpty;
+    if (value is List) return value.isNotEmpty;
+    if (value is Map) return value.isNotEmpty;
+    if (value is num) return value != 0;
+    return true;
   }
 }

@@ -29,8 +29,23 @@ class GetSequenceState extends TemplateState {
         charCode: charCode,
         type: notifyIsBlockSequence,
       );
+    } else if (charCode == caret) {
+      res.pop = true;
+      res.message = NotifyMessage(
+        charCode: charCode,
+        type: notifyIsBlockSequence,
+        value: '^', // Mark this as an inverted section
+      );
+    } else if (charCode == more) {
+      res.pop = true;
+      res.message = NotifyMessage(
+        charCode: charCode,
+        type: notifyIsPartialSequence,
+      );
     } else if ((charCode >= 65 && charCode <= 90) ||
-        (charCode >= 97 && charCode <= 122)) {
+        (charCode >= 97 && charCode <= 122) ||
+        charCode == dot ||
+        charCode == 64) { // 64 is '@'
       res.pop = true;
       res.message = NotifyMessage(
         charCode: charCode,

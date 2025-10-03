@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:mustache_template/mustache_template.dart';
 import 'package:path/path.dart' as path;
 
 import 'partial_resolver.dart';
@@ -10,12 +9,12 @@ import 'partial_resolver.dart';
 class PathPartialResolver implements DotPromptPartialResolver {
   /// Creates a new instance of [PathPartialResolver].
   PathPartialResolver(List<Directory> partialPaths)
-    : _partialPaths = partialPaths;
+      : _partialPaths = partialPaths;
 
   final List<Directory> _partialPaths;
 
   @override
-  Template? resolve(String name) {
+  String? resolve(String name) {
     if (_partialPaths.isEmpty) {
       return null;
     }
@@ -31,14 +30,14 @@ class PathPartialResolver implements DotPromptPartialResolver {
           template =
               parts.length > 2 ? parts.sublist(2).join('---').trim() : '';
         }
-        return Template(template, htmlEscapeValues: false);
+        return template;
       }
 
       // Look for .mustache file
       partialPath = path.join(partialDir.path, '_$name.mustache');
       if (File(partialPath).existsSync()) {
         final partialContent = File(partialPath).readAsStringSync();
-        return Template(partialContent, htmlEscapeValues: false);
+        return partialContent;
       }
     }
 

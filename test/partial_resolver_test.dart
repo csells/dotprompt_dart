@@ -31,7 +31,7 @@ Hello from the prompt partial!
 
       expect(template, isNotNull);
       expect(
-        template!.renderString({}),
+        template,
         equals('Hello from the prompt partial!'),
       );
     });
@@ -46,7 +46,7 @@ Hello from the prompt partial!
 
       expect(template, isNotNull);
       expect(
-        template!.renderString({}),
+        template,
         equals('Hello from the mustache partial!'),
       );
     });
