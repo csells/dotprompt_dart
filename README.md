@@ -41,6 +41,9 @@ going to get out a `JsonSchema` object for your use.
   template rendering as well as to provide type info for model output
 - Extension Support: Custom configuration through namespaced keys (e.g.,
   `myext.temperature`)
+- Partials Support: Reusable template snippets using Mustache partials with
+  `PathPartialResolver` for file-based applications and extensible architecture
+  for web/custom implementations
 
 ## Migrating from 0.2.0 to 0.3.0
 
@@ -249,7 +252,7 @@ To resolve these partials, you need to provide an implementation of the
 For applications with access to `dart:io` (e.g., command-line or server-side),
 you can use the included `PathPartialResolver`. This class searches for partial
 files in a list of specified directories. It will look for files named
-`partialName.prompt` or `partialName.mustache`.
+`_partialName.prompt` or `_partialName.mustache` (with underscore prefix).
 
 Here's how you can use it:
 

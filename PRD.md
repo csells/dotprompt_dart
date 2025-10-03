@@ -63,6 +63,19 @@ plug‑in, non‑Dart runtimes.
 * Allow registration of custom helpers at runtime; retain full fidelity with
   Handlebars blocks and partials.
 
+#### Implemented Features (v0.4.0)
+
+**Partials Support:**
+* Abstract class `DotPromptPartialResolver` for resolving partial templates
+* `PathPartialResolver` implementation for applications with `dart:io` access
+* Searches for partials with naming conventions: `_partialName.prompt` or `_partialName.mustache`
+* Supports multiple directory search paths
+* Strips front-matter from `.prompt` partials automatically
+* Web-compatible architecture (custom resolvers can be implemented for web platforms)
+* Use syntax: `{{> partialName }}` in templates
+
+#### Planned Features
+
 The following template features are not yet implemented but planned for future releases:
 
 1. Built-in Helpers ([spec](https://google.github.io/dotprompt/reference/template/#built-in-helpers)):
@@ -105,14 +118,18 @@ The following template features are not yet implemented but planned for future r
 * Provide a simple call to load from files and strings. **As of 0.3.0, for web and wasm compatibility, use `DotPrompt.stream` instead of `DotPrompt.file`.** Example:
 
 ```dart
-final greet = await DotPrompt.stream(File('prompts/greet.prompt').openRead(), name: 'prompts/greet.prompt');
-final meta = greet.metadata; // the model info, settings, etc.
+final greet = await DotPrompt.stream(
+  File('prompts/greet.prompt').openRead(),
+  name: 'prompts/greet.prompt',
+  partialResolver: PathPartialResolver([Directory('prompts/partials')]), // optional, for partials support
+);
+final meta = greet.frontMatter; // the model info, settings, etc.
 final prompt = greet.render({'name': 'Chris'}); // validates input and expands the prompt string
 
 // TODO: use something like dartantic_ai to create an Agent and run the prompt
-```  
+```
 
-These calls perform schema validation, template rendering and model settings.
+These calls perform schema validation, template rendering (with optional partials) and model settings.
 
 ### Typed Code Generation using a Builder (future)
 * `build_runner` scans `*.prompt` files and emits a Dart class per prompt:  
