@@ -1,3 +1,10 @@
+## 0.4.0
+
+- Thanks to gspencergoog for [a
+  PR](https://github.com/csells/dotprompt_dart/pull/2) that introduces support
+  for Mustache partials in .prompt files, allowing for reusable template
+  snippets.
+
 ## 0.3.0
 
 - Enabled web and wasm compatibility
