@@ -6,6 +6,3 @@
 # https://dart.dev/guides/libraries/private-files#pubspeclock.
 pubspec.lock
 .vscode
-.dartServer
-.dart-tool
-.pub-cache
