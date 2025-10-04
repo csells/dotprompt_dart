@@ -1,3 +1,11 @@
+## 0.5.0
+
+- started with [the stubble package
+  code](https://github.com/Yohanson555/stubble4dart) to serve as a base for a
+  [spec compliant dotprompt template
+  language](https://google.github.io/dotprompt/reference/template/)
+  implementation.
+  
 ## 0.4.0
 
 - Thanks to gspencergoog for [a

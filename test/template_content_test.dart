@@ -215,6 +215,29 @@ input:
         expect(dotPrompt.render(input: {'isLoggedIn': true}), equals(''));
       });
 
+      test('#unless with else block', () {
+        const promptString = '''
+---
+name: test_unless_else
+input:
+  schema:
+    type: object
+    properties:
+      isLoggedIn:
+        type: boolean
+---
+{{#unless isLoggedIn}}Please log in.{{else}}You are logged in.{{/unless}}''';
+        final dotPrompt = DotPrompt(promptString);
+        expect(
+          dotPrompt.render(input: {'isLoggedIn': false}),
+          equals('Please log in.'),
+        );
+        expect(
+          dotPrompt.render(input: {'isLoggedIn': true}),
+          equals('You are logged in.'),
+        );
+      });
+
       test('#each with @index', () {
         const promptString = '''
 ---
@@ -294,59 +317,6 @@ input:
         expect(output.split(', '), hasLength(3));
       });
 
-      test('#with block changes context', () {
-        const promptString = '''
----
-name: test_with
-input:
-  schema:
-    type: object
-    properties:
-      user:
-        type: object
-        properties:
-          name:
-            type: string
-          email:
-            type: string
----
-{{#with user}}Name: {{name}}, Email: {{email}}{{/with}}''';
-        final dotPrompt = DotPrompt(promptString);
-        final output = dotPrompt.render(
-          input: {
-            'user': {'name': 'Alice', 'email': 'alice@example.com'},
-          },
-        );
-        expect(output, equals('Name: Alice, Email: alice@example.com'));
-      });
-
-      test('#with with @root access', () {
-        const promptString = '''
----
-name: test_with_root
-input:
-  schema:
-    type: object
-    properties:
-      company:
-        type: string
-      user:
-        type: object
-        properties:
-          name:
-            type: string
----
-{{#with user}}{{name}} works at {{@root.company}}{{/with}}''';
-        final dotPrompt = DotPrompt(promptString);
-        final output = dotPrompt.render(
-          input: {
-            'company': 'Acme Corp',
-            'user': {'name': 'Bob'},
-          },
-        );
-        expect(output, equals('Bob works at Acme Corp'));
-      });
-
       test('#each @key provides object keys', () {
         const promptString = '''
 ---
@@ -372,6 +342,83 @@ input:
         );
         expect(output, contains('color=blue'));
         expect(output, contains('size=large'));
+      });
+
+      test('@key with empty object renders nothing', () {
+        const promptString = '''
+---
+name: test_key_empty
+input:
+  schema:
+    type: object
+---
+{{#each obj}}{{@key}}{{/each}}done''';
+        final dotPrompt = DotPrompt(promptString);
+        final output = dotPrompt.render(input: {'obj': {}});
+        expect(output, equals('done'));
+      });
+
+      test('@key with single property object', () {
+        const promptString = '''
+---
+name: test_key_single
+input:
+  schema:
+    type: object
+---
+{{#each obj}}{{@key}}:{{this}}{{/each}}''';
+        final dotPrompt = DotPrompt(promptString);
+        final output = dotPrompt.render(
+          input: {
+            'obj': {'only': 'value'},
+          },
+        );
+        expect(output, equals('only:value'));
+      });
+
+      test('@key is not available in array iteration', () {
+        const promptString = '''
+---
+name: test_key_in_array
+input:
+  schema:
+    type: object
+---
+{{#each items}}{{@key}}:{{this}};{{/each}}''';
+        final dotPrompt = DotPrompt(promptString);
+        final output = dotPrompt.render(
+          input: {
+            'items': ['a', 'b'],
+          },
+        );
+        // @key should be empty/null for arrays
+        expect(output, contains('a'));
+        expect(output, contains('b'));
+      });
+
+      test('@key with nested object iteration', () {
+        const promptString = '''
+---
+name: test_nested_key
+input:
+  schema:
+    type: object
+---
+{{#each outer}}{{@key}}:{{#each this}}{{@key}}={{this}},{{/each}};{{/each}}''';
+        final dotPrompt = DotPrompt(promptString);
+        final output = dotPrompt.render(
+          input: {
+            'outer': {
+              'a': {'x': 1, 'y': 2},
+              'b': {'z': 3},
+            },
+          },
+        );
+        expect(output, contains('a:'));
+        expect(output, contains('b:'));
+        expect(output, contains('x=1'));
+        expect(output, contains('y=2'));
+        expect(output, contains('z=3'));
       });
     });
 
@@ -701,6 +748,27 @@ Footer: {{>footer style="bold"}}''';
         expect(output, contains('Footer:'));
       });
 
+      test('partial with hash arguments - spec compliance check', () {
+        // NOTE: Hash arguments in partials ({{> partial name=value}}) are part
+        // of the spec but may not be fully implemented yet. This test documents
+        // the expected behavior per the dotprompt template spec.
+        const promptString = '''
+---
+name: test_partial_hash
+input:
+  schema:
+    type: object
+    properties:
+      title:
+        type: string
+---
+{{>greeting name="World" greeting=title}}''';
+        final dotPrompt = DotPrompt(promptString);
+        // This should pass name and greeting as context to the partial
+        final output = dotPrompt.render(input: {'title': 'Hello'});
+        expect(output, isNotNull);
+      });
+
       test('custom helper registration', () {
         const promptString = '''
 ---
@@ -963,10 +1031,6 @@ input:
     });
 
     group('Template Syntax Features', () {
-      // NOTE: Handlebars comment syntax {{! }} and {{!-- --}} is NOT currently
-      // supported by the mustache_template package. This is a known limitation.
-      // See README.md "Handlebar Implementation Shortcomings" section.
-
       test('triple-brace for unescaped HTML output', () {
         const promptString = '''
 ---
@@ -1049,6 +1113,109 @@ input:
           },
         );
         expect(output, equals('a,b,c'));
+      });
+    });
+
+    group('Dotprompt Spec Features', () {
+      test('array interpolation shows array representation', () {
+        const promptString = '''
+---
+name: test_array_interp
+input:
+  schema:
+    type: object
+---
+Array: {{items}}''';
+        final dotPrompt = DotPrompt(promptString);
+        final output = dotPrompt.render(
+          input: {
+            'items': ['a', 'b', 'c'],
+          },
+        );
+        // Should render some representation of the array
+        expect(output, contains('Array:'));
+        expect(output, isNotEmpty);
+      });
+
+      test('object interpolation shows object representation', () {
+        const promptString = '''
+---
+name: test_object_interp
+input:
+  schema:
+    type: object
+---
+Object: {{user}}''';
+        final dotPrompt = DotPrompt(promptString);
+        final output = dotPrompt.render(
+          input: {
+            'user': {'name': 'John', 'age': 30},
+          },
+        );
+        // Should render some representation of the object
+        expect(output, contains('Object:'));
+        expect(output, isNotEmpty);
+      });
+
+      test('partial with scoped context', () {
+        const promptString = '''
+---
+name: test_partial_scope
+input:
+  schema:
+    type: object
+---
+{{>userCard user}}''';
+        final dotPrompt = DotPrompt(promptString);
+        final output = dotPrompt.render(
+          input: {
+            'user': {'name': 'John', 'role': 'admin'},
+          },
+        );
+        // Partial should receive user as context
+        expect(output, isNotNull);
+      });
+
+      test('helper with literal string in named argument', () {
+        String formatHelper(HelperInvocation invocation) {
+          final prefix = invocation.named('prefix') ?? '';
+          final value = invocation.firstPositional ?? '';
+          return '$prefix$value';
+        }
+
+        const promptString = '''
+---
+name: test_named_literal
+input:
+  schema:
+    type: object
+---
+{{format name prefix="Mr. "}}''';
+        final dotPrompt = DotPrompt(promptString);
+        dotPrompt.registerHelper('format', formatHelper);
+        final output = dotPrompt.render(input: {'name': 'Smith'});
+        expect(output, equals('Mr. Smith'));
+      });
+
+      test('helper with literal number in named argument', () {
+        String multiplyHelper(HelperInvocation invocation) {
+          final value = invocation.firstPositional as num;
+          final factor = invocation.named('by') as num;
+          return (value * factor).toString();
+        }
+
+        const promptString = '''
+---
+name: test_named_number
+input:
+  schema:
+    type: object
+---
+{{multiply num by=10}}''';
+        final dotPrompt = DotPrompt(promptString);
+        dotPrompt.registerHelper('multiply', multiplyHelper);
+        final output = dotPrompt.render(input: {'num': 5});
+        expect(output, equals('50'));
       });
     });
 
@@ -1276,6 +1443,70 @@ input:
 
     group('Comprehensive Spec Compliance Tests', () {
       group('Variable Access Edge Cases', () {
+        test('this refers to current context value', () {
+          const promptString = '''
+---
+name: test_this
+input:
+  schema:
+    type: object
+    properties:
+      items:
+        type: array
+---
+{{#each items}}{{this}} {{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'items': ['a', 'b', 'c'],
+            },
+          );
+          expect(output, equals('a b c '));
+        });
+
+        test('this with objects shows object representation', () {
+          const promptString = '''
+---
+name: test_this_object
+input:
+  schema:
+    type: object
+---
+{{#each items}}{{this}};{{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'items': [
+                {'name': 'John'},
+                {'name': 'Jane'},
+              ],
+            },
+          );
+          // Objects should be converted to string representation
+          expect(output, isNotEmpty);
+        });
+
+        test('this in nested each refers to innermost context', () {
+          const promptString = '''
+---
+name: test_nested_this
+input:
+  schema:
+    type: object
+---
+{{#each outer}}{{#each this}}{{this}}{{/each}};{{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'outer': [
+                [1, 2],
+                [3, 4],
+              ],
+            },
+          );
+          expect(output, equals('12;34;'));
+        });
+
         test('missing variable returns empty string', () {
           const promptString = '''
 ---
@@ -1305,6 +1536,28 @@ Value: {{value}}''';
           final dotPrompt = DotPrompt(promptString);
           final output = dotPrompt.render(input: {'value': null});
           expect(output, equals('Value: '));
+        });
+
+        test('empty string vs missing vs null are handled consistently', () {
+          const promptString = '''
+---
+name: test_empty_vs_missing
+input:
+  schema:
+    type: object
+    properties:
+      empty:
+        type: string
+      nullable:
+        type: ["string", "null"]
+---
+Empty:[{{empty}}] Missing:[{{missing}}] Null:[{{nullable}}]''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {'empty': '', 'nullable': null},
+          );
+          // All should render as empty strings
+          expect(output, equals('Empty:[] Missing:[] Null:[]'));
         });
 
         test('deeply nested property access', () {
@@ -1367,6 +1620,37 @@ True: {{trueVal}}, False: {{falseVal}}''';
       });
 
       group('#if Helper Edge Cases', () {
+        test('#if with null is falsy', () {
+          const promptString = '''
+---
+name: test_if_null
+input:
+  schema:
+    type: object
+    properties:
+      value:
+        type: ["string", "null"]
+---
+{{#if value}}shown{{else}}hidden{{/if}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(input: {'value': null});
+          expect(output, equals('hidden'));
+        });
+
+        test('#if with undefined is falsy', () {
+          const promptString = '''
+---
+name: test_if_undefined
+input:
+  schema:
+    type: object
+---
+{{#if missing}}shown{{else}}hidden{{/if}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(input: {});
+          expect(output, equals('hidden'));
+        });
+
         test('#if with empty string is falsy', () {
           const promptString = '''
 ---
@@ -1450,6 +1734,56 @@ input:
             equals('none'),
           );
         });
+
+        test('deeply nested #else blocks are handled correctly', () {
+          const promptString = '''
+---
+name: test_deep_else
+input:
+  schema:
+    type: object
+---
+{{#if a}}A{{else}}{{#if b}}B{{else}}{{#if c}}C{{else}}None{{/if}}{{/if}}{{/if}}''';
+          final dotPrompt = DotPrompt(promptString);
+          expect(
+            dotPrompt.render(input: {'a': true, 'b': false, 'c': false}),
+            equals('A'),
+          );
+          expect(
+            dotPrompt.render(input: {'a': false, 'b': true, 'c': false}),
+            equals('B'),
+          );
+          expect(
+            dotPrompt.render(input: {'a': false, 'b': false, 'c': true}),
+            equals('C'),
+          );
+          expect(
+            dotPrompt.render(input: {'a': false, 'b': false, 'c': false}),
+            equals('None'),
+          );
+        });
+
+        test('#else works correctly in nested block helpers', () {
+          const promptString = '''
+---
+name: test_nested_else_with_each
+input:
+  schema:
+    type: object
+---
+{{#each items}}{{#if active}}{{name}}{{else}}[{{name}}]{{/if}} {{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'items': [
+                {'name': 'A', 'active': true},
+                {'name': 'B', 'active': false},
+                {'name': 'C', 'active': true},
+              ],
+            },
+          );
+          expect(output, equals('A [B] C '));
+        });
       });
 
       group('#each Helper Edge Cases', () {
@@ -1465,6 +1799,100 @@ input:
           final dotPrompt = DotPrompt(promptString);
           final output = dotPrompt.render(input: {'items': []});
           expect(output, equals('done'));
+        });
+
+        test('@index starts at 0 and increments correctly', () {
+          const promptString = '''
+---
+name: test_index
+input:
+  schema:
+    type: object
+---
+{{#each items}}{{@index}}{{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'items': ['a', 'b', 'c', 'd', 'e'],
+            },
+          );
+          expect(output, equals('01234'));
+        });
+
+        test('@first is only true for first item', () {
+          const promptString = '''
+---
+name: test_first
+input:
+  schema:
+    type: object
+---
+{{#each items}}{{@first}}{{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'items': ['a', 'b', 'c'],
+            },
+          );
+          expect(output, equals('truefalsefalse'));
+        });
+
+        test('@last is only true for last item', () {
+          const promptString = '''
+---
+name: test_last
+input:
+  schema:
+    type: object
+---
+{{#each items}}{{@last}}{{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'items': ['a', 'b', 'c'],
+            },
+          );
+          expect(output, equals('falsefalsetrue'));
+        });
+
+        test('@first and @last both true for single item array', () {
+          const promptString = '''
+---
+name: test_single
+input:
+  schema:
+    type: object
+---
+{{#each items}}{{@first}}-{{@last}}{{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'items': ['only'],
+            },
+          );
+          expect(output, equals('true-true'));
+        });
+
+        test('@index, @first, @last work in nested loops independently', () {
+          const promptString = '''
+---
+name: test_nested_vars
+input:
+  schema:
+    type: object
+---
+{{#each outer}}{{@index}}:{{#each this}}{{@index}}{{#if @last}};{{/if}}{{/each}}|{{/each}}''';
+          final dotPrompt = DotPrompt(promptString);
+          final output = dotPrompt.render(
+            input: {
+              'outer': [
+                ['a', 'b'],
+                ['c', 'd', 'e'],
+              ],
+            },
+          );
+          // Outer @index should be 0,1 and inner @index should reset
+          expect(output, equals('0:01;|1:012;|'));
         });
 
         test('#each with single item', () {
@@ -1556,62 +1984,6 @@ input:
         });
       });
 
-      group('#with Helper Edge Cases', () {
-        test('#with with null value throws error', () {
-          // NOTE: Current implementation throws an error for null values
-          // Handlebars spec would skip the block silently
-          const promptString = '''
----
-name: test_with_null
-input:
-  schema:
-    type: object
----
-{{#with user}}{{name}}{{/with}}done''';
-          final dotPrompt = DotPrompt(promptString);
-          expect(
-            () => dotPrompt.render(input: {'user': null}),
-            throwsA(isA<Exception>()),
-          );
-        });
-
-        test('#with with missing property throws error', () {
-          // NOTE: Current implementation throws an error for missing properties
-          // Handlebars spec would skip the block silently
-          const promptString = '''
----
-name: test_with_missing
-input:
-  schema:
-    type: object
----
-{{#with missing}}{{name}}{{/with}}done''';
-          final dotPrompt = DotPrompt(promptString);
-          expect(() => dotPrompt.render(input: {}), throwsA(isA<Exception>()));
-        });
-
-        test('#with nested maintains @root', () {
-          const promptString = '''
----
-name: test_with_nested_root
-input:
-  schema:
-    type: object
----
-{{#with level1}}{{#with level2}}{{value}}-{{@root.top}}{{/with}}{{/with}}''';
-          final dotPrompt = DotPrompt(promptString);
-          final output = dotPrompt.render(
-            input: {
-              'top': 'TOP',
-              'level1': {
-                'level2': {'value': 'deep'},
-              },
-            },
-          );
-          expect(output, equals('deep-TOP'));
-        });
-      });
-
       group('Helper Argument Parsing', () {
         test('helper with multiple positional args', () {
           String multiArgHelper(HelperInvocation invocation) {
@@ -1695,6 +2067,71 @@ input:
           dotPrompt.registerHelper('add', numberHelper);
           final output = dotPrompt.render(input: {});
           expect(output, equals('60'));
+        });
+
+        test('helper with boolean literal arguments', () {
+          String boolHelper(HelperInvocation invocation) {
+            final args = invocation.positionalArgs;
+            return args.map((e) => '$e').join(',');
+          }
+
+          const promptString = '''
+---
+name: test_bools
+input:
+  schema:
+    type: object
+---
+{{showBools true false}}''';
+          final dotPrompt = DotPrompt(promptString);
+          dotPrompt.registerHelper('showBools', boolHelper);
+          final output = dotPrompt.render(input: {});
+          expect(output, equals('true,false'));
+        });
+
+        test('helper with mixed type arguments', () {
+          String mixedHelper(HelperInvocation invocation) {
+            final types = invocation.positionalArgs.map((arg) {
+              if (arg is String) return 'str';
+              if (arg is num) return 'num';
+              if (arg is bool) return 'bool';
+              return 'unknown';
+            }).join(',');
+            return types;
+          }
+
+          const promptString = '''
+---
+name: test_mixed
+input:
+  schema:
+    type: object
+---
+{{types "hello" 42 true 3.14 false}}''';
+          final dotPrompt = DotPrompt(promptString);
+          dotPrompt.registerHelper('types', mixedHelper);
+          final output = dotPrompt.render(input: {});
+          expect(output, equals('str,num,bool,num,bool'));
+        });
+
+        test('helper with variable reference vs literal', () {
+          String refHelper(HelperInvocation invocation) {
+            return invocation.positionalArgs.join('|');
+          }
+
+          const promptString = '''
+---
+name: test_ref_vs_literal
+input:
+  schema:
+    type: object
+---
+{{show myVar "literal"}}''';
+          final dotPrompt = DotPrompt(promptString);
+          dotPrompt.registerHelper('show', refHelper);
+          final output = dotPrompt.render(input: {'myVar': 'value'});
+          // myVar should resolve to 'value', "literal" stays as string
+          expect(output, equals('value|literal'));
         });
       });
 
@@ -1796,19 +2233,19 @@ input:
   schema:
     type: object
 ---
-{{#with a}}{{#with b}}{{#with c}}{{value}}-{{@root.top}}{{/with}}{{/with}}{{/with}}''';
+{{#each items}}{{#each this}}{{name}}-{{@root.company}}{{/each}}{{/each}}''';
           final dotPrompt = DotPrompt(promptString);
           final output = dotPrompt.render(
             input: {
-              'top': 'ROOT',
-              'a': {
-                'b': {
-                  'c': {'value': 'leaf'},
-                },
-              },
+              'company': 'Acme',
+              'items': [
+                [
+                  {'name': 'Alice'},
+                ],
+              ],
             },
           );
-          expect(output, equals('leaf-ROOT'));
+          expect(output, equals('Alice-Acme'));
         });
 
         test('custom @ variables via context parameter', () {

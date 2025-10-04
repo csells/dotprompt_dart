@@ -29,7 +29,14 @@ class GetPathAttribute extends TemplateState {
         if (value is NamedArgument) {
           // pass through
         } else if (value is String) {
-          value = context.get(value);
+          // Check for boolean literals first
+          if (value == 'true') {
+            value = true;
+          } else if (value == 'false') {
+            value = false;
+          } else {
+            value = context.get(value);
+          }
         }
 
         return TemplateResult(
