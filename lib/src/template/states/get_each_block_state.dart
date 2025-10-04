@@ -11,16 +11,23 @@ import 'close_bracket_state.dart';
 import 'get_block_end_state.dart';
 import 'get_path_state.dart';
 
+/// State for processing each blocks ({{#each items}}).
 class GetEachBlockState extends TemplateState {
+  /// Creates a new each block state.
   GetEachBlockState({required this.symbol, required this.line}) {
     methods = {'process': process, 'notify': notify};
   }
+
+  /// The column position where the block started.
   final int symbol;
+
+  /// The line number where the block started.
   final int line;
 
   String _path = '';
   String _body = '';
 
+  /// Processes characters to collect the path for iteration.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -43,6 +50,7 @@ class GetEachBlockState extends TemplateState {
     );
   }
 
+  /// Handles notifications for path and block end.
   TemplateResult notify(NotifyMessage msg, TemplateContext context) {
     switch (msg.type) {
       case notifyPathResult:
@@ -62,12 +70,14 @@ class GetEachBlockState extends TemplateState {
           err: TemplateError(
             code: errorUnsupportedNotify,
             text:
-                'State "$runtimeType" does not support notifies of type ${msg.type}',
+                'State "GetEachBlockState" does not support notifies of '
+                'type ${msg.type}',
           ),
         );
     }
   }
 
+  /// Executes the each block iteration and returns the result.
   TemplateResult result(TemplateContext context) {
     final result = TemplateResult();
 
@@ -87,50 +97,32 @@ class GetEachBlockState extends TemplateState {
             if (data is List) {
               for (var i = 0; i < data.length; i++) {
                 final item = data[i];
-                // Create context with 'this' and iteration variables
-                final itemData = item is Map
-                    ? {...item, 'this': item}
-                    : {'this': item};
+                final locals = {
+                  '@index': i,
+                  '@first': i == 0,
+                  '@last': i == data.length - 1,
+                };
 
-                // Add iteration context variables
-                itemData['@index'] = i;
-                itemData['@first'] = i == 0;
-                itemData['@last'] = i == data.length - 1;
-
-                final itemContext = TemplateContext(
-                  itemData,
-                  context.helpers as Map<String, Function(List<dynamic>, Function?)>?,
-                  context.opt('options'),
-                  null,
-                  context.resolvePartial,
-                );
-
+                final itemContext = context.child(item, locals: locals);
                 final machine = TemplateMachine(_body);
                 buffer.write(machine.run(itemContext));
               }
             } else {
               var index = 0;
+              // ignore: avoid_dynamic_calls
               final keys = data.keys.toList();
               for (final key in keys) {
+                // ignore: avoid_dynamic_calls
                 final item = data[key];
-                // Create context with 'this', '@key', and iteration variables
-                final itemData = item is Map
-                    ? {...item, 'this': item}
-                    : {'this': item};
+                final locals = {
+                  '@key': key,
+                  '@index': index,
+                  '@first': index == 0,
+                  // ignore: avoid_dynamic_calls
+                  '@last': index == keys.length - 1,
+                };
 
-                itemData['@key'] = key;
-                itemData['@index'] = index;
-                itemData['@first'] = index == 0;
-                itemData['@last'] = index == keys.length - 1;
-
-                final itemContext = TemplateContext(
-                  itemData,
-                  context.helpers as Map<String, Function(List<dynamic>, Function?)>?,
-                  context.opt('options'),
-                  null,
-                  context.resolvePartial,
-                );
-
+                final itemContext = context.child(item, locals: locals);
                 final machine = TemplateMachine(_body);
                 buffer.write(machine.run(itemContext));
                 index++;
@@ -150,7 +142,7 @@ class GetEachBlockState extends TemplateState {
             code: errorPathWrongSpecified,
           );
         }
-      } catch (e) {
+      } on Exception catch (e) {
         result.err = TemplateError(
           text: e.toString(),
           code: errorCallingHelper,

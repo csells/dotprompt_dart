@@ -1,4 +1,5 @@
 import 'built_in_helpers.dart';
+import 'helper_types.dart';
 import 'template_context.dart';
 import 'template_machine.dart';
 
@@ -21,7 +22,6 @@ export 'states/get_number_attribute.dart';
 export 'states/get_partial_state.dart';
 export 'states/get_path_attribute.dart';
 export 'states/get_path_state.dart';
-export 'states/get_section_state.dart';
 export 'states/get_sequence_state.dart';
 export 'states/get_string_attribute.dart';
 export 'states/get_with_block_state.dart';
@@ -41,8 +41,8 @@ class Template {
     this.source, {
     bool htmlEscapeValues = true,
     String? Function(String)? partialResolver,
-  })  : _htmlEscapeValues = htmlEscapeValues,
-        _partialResolver = partialResolver {
+  }) : _htmlEscapeValues = htmlEscapeValues,
+       _partialResolver = partialResolver {
     // Register built-in helpers
     final builtInHelpers = getBuiltInHelpers();
     for (final entry in builtInHelpers.entries) {
@@ -55,13 +55,13 @@ class Template {
 
   final bool _htmlEscapeValues;
   final String? Function(String)? _partialResolver;
-  final Map<String, Function(List<dynamic>, Function?)> _helpers = {};
+  final Map<String, TemplateHelper> _helpers = {};
   final Map<String, dynamic> _options = {
     'ignoreUnregisteredHelperErrors': false,
   };
 
   /// Register a helper function
-  void registerHelper(String name, Function(List<dynamic>, Function?) helper) {
+  void registerHelper(String name, TemplateHelper helper) {
     _helpers[name] = helper;
   }
 
@@ -71,14 +71,36 @@ class Template {
   }
 
   /// Render a template with the given data
-  String render(String template, Map<String, dynamic> data) {
+  String render(
+    String template,
+    Map<String, dynamic> data, {
+    Map<String, dynamic>? metadata,
+    Map<String, dynamic>? contextVariables,
+  }) {
     // Create context with partial resolver
+    final renderOptions = Map<String, dynamic>.from(_options)
+      ..['htmlEscapeValues'] = _htmlEscapeValues;
+
+    final sharedAt = <String, dynamic>{
+      '@root': data,
+      '@metadata': metadata ?? <String, dynamic>{},
+    };
+
+    if (contextVariables != null) {
+      for (final entry in contextVariables.entries) {
+        final key = entry.key.startsWith('@') ? entry.key : '@${entry.key}';
+        sharedAt[key] = entry.value;
+      }
+    }
+
     final context = TemplateContext(
-      data,
-      _helpers,
-      _options,
-      null, // compile function
-      _partialResolver, // partial resolver
+      value: data,
+      helpers: _helpers,
+      options: renderOptions,
+      partialResolver: _partialResolver,
+      metadata: metadata,
+      sharedAtVariables: sharedAt,
+      rootValue: data,
     );
 
     final machine = TemplateMachine(template);
@@ -86,7 +108,14 @@ class Template {
   }
 
   /// Render the template using its source with the given data
-  String renderString(Map<String, dynamic> data) {
-    return render(source, data);
-  }
+  String renderString(
+    Map<String, dynamic> data, {
+    Map<String, dynamic>? metadata,
+    Map<String, dynamic>? contextVariables,
+  }) => render(
+    source,
+    data,
+    metadata: metadata,
+    contextVariables: contextVariables,
+  );
 }

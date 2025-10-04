@@ -212,4 +212,32 @@ class DotPromptFrontMatter {
 
     return buffer.toString();
   }
+
+  /// Converts the front matter into a map suitable for metadata exposure.
+  Map<String, dynamic> toMetadata() {
+    Map<String, dynamic>? schemaToMap(JsonSchema? schema) {
+      final map = schema?.schemaMap;
+      if (map == null) return null;
+      return Map<String, dynamic>.from(map);
+    }
+
+    return {
+      if (name != null) 'name': name,
+      if (variant != null) 'variant': variant,
+      if (model != null) 'model': model,
+      if (tools != null) 'tools': List<String>.from(tools!),
+      if (config.isNotEmpty) 'config': Map<String, dynamic>.from(config),
+      'input': {
+        if (input.schema != null) 'schema': schemaToMap(input.schema),
+        if (input.defaults.isNotEmpty)
+          'default': Map<String, dynamic>.from(input.defaults),
+      },
+      'output': {
+        if (output.schema != null) 'schema': schemaToMap(output.schema),
+        'format': output.format,
+      },
+      if (metadata.isNotEmpty) 'metadata': Map<String, dynamic>.from(metadata),
+      if (ext.isNotEmpty) 'ext': Map<String, dynamic>.from(ext),
+    };
+  }
 }

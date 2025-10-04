@@ -29,7 +29,7 @@ void main() {
     });
 
     test('renders template with input', () {
-      final output = dotPrompt.render({'name': 'Chris'});
+      final output = dotPrompt.render(input: {'name': 'Chris'});
       expect(output, contains('Hello Chris!'));
     });
 
@@ -37,7 +37,7 @@ void main() {
       final promptString =
           await File('example/prompts/greet.prompt').readAsString();
       final dotPrompt = DotPrompt(promptString);
-      final output = dotPrompt.render({'name': 'Chris'});
+      final output = dotPrompt.render(input: {'name': 'Chris'});
       expect(output, contains('Hello Chris!'));
 
       expect(dotPrompt.frontMatter.name, 'greet');

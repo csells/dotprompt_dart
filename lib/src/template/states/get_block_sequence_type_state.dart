@@ -9,25 +9,30 @@ import 'get_block_helper_state.dart';
 import 'get_block_name_state.dart';
 import 'get_each_block_state.dart';
 import 'get_if_block_state.dart';
-import 'get_section_state.dart';
 import 'get_with_block_state.dart';
 
+/// State for determining block type (if, unless, each, with, or custom helper).
 class GetBlockSequenceTypeState extends TemplateState {
+  /// Creates a new block sequence type state.
   GetBlockSequenceTypeState({this.inverted = false}) {
     methods = {'init': init, 'process': process, 'notify': notify};
   }
 
+  /// Whether this is an inverted block (^).
   final bool inverted;
 
+  /// Initializes by delegating to block name state.
   TemplateResult init(InitMessage msg, TemplateContext context) =>
       TemplateResult(state: GetBlockNameState());
 
+  /// Processes characters by delegating to parent state.
   TemplateResult process(ProcessMessage msg, TemplateContext context) =>
       TemplateResult(
         pop: true,
         message: ProcessMessage(charCode: msg.charCode),
       );
 
+  /// Handles block name notification and routes to appropriate block state.
   TemplateResult notify(NotifyMessage msg, TemplateContext context) {
     if (msg.type == notifyNameResult) {
       final String blockName = msg.value;
@@ -53,30 +58,24 @@ class GetBlockSequenceTypeState extends TemplateState {
               line: context.line,
               symbol: context.symbol,
             );
-
           case 'unless':
-            // 'unless' is like an inverted 'if' - implement it here
             res.state = GetIfBlockState(
               line: context.line,
               symbol: context.symbol,
               inverted: true,
               blockName: 'unless',
             );
-
           case 'with':
             res.state = GetWithBlockState(
               line: context.line,
               symbol: context.symbol,
             );
-
           case 'each':
             res.state = GetEachBlockState(
               line: context.line,
               symbol: context.symbol,
             );
-
           default:
-            // Must be a registered helper
             res.state = GetBlockHelperState(
               helper: blockName,
               line: context.line,
@@ -91,8 +90,8 @@ class GetBlockSequenceTypeState extends TemplateState {
     return TemplateResult(
       err: TemplateError(
         code: errorUnsupportedNotify,
-        text:
-            'State "$runtimeType" does not support notifies of type ${msg.type}',
+        text: 'State "GetBlockSequenceTypeState" does not support '
+            'notifies of type ${msg.type}',
       ),
     );
   }

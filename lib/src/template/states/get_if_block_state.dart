@@ -11,7 +11,9 @@ import 'close_bracket_state.dart';
 import 'get_block_end_state.dart';
 import 'get_if_condition_state.dart';
 
+/// State for processing if/unless blocks ({{#if condition}}).
 class GetIfBlockState extends TemplateState {
+  /// Creates a new if block state.
   GetIfBlockState({
     required this.symbol,
     required this.line,
@@ -20,15 +22,24 @@ class GetIfBlockState extends TemplateState {
   }) {
     methods = {'process': process, 'notify': notify};
   }
+
+  /// The column position where the block started.
   final int symbol;
+
+  /// The line number where the block started.
   final int line;
+
+  /// Whether this is an inverted block (unless).
   final bool inverted;
+
+  /// The block name (if or unless).
   final String blockName;
 
   bool _res = false;
   String _body = '';
   String _elseBody = '';
 
+  /// Processes characters to collect the condition.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -51,6 +62,7 @@ class GetIfBlockState extends TemplateState {
     );
   }
 
+  /// Handles notifications for condition and block end.
   TemplateResult? notify(NotifyMessage msg, TemplateContext context) {
     switch (msg.type) {
       case notifyConditionResult:
@@ -66,15 +78,9 @@ class GetIfBlockState extends TemplateState {
         return TemplateResult(state: GetBlockEndState(blockName: blockName));
 
       case notifyBlockEndResult:
-        final fullBody = msg.value as String;
-        // Check if there's an {{else}} tag - split on it if found
-        final elseIndex = fullBody.indexOf('{{else}}');
-        if (elseIndex != -1) {
-          _body = fullBody.substring(0, elseIndex);
-          _elseBody = fullBody.substring(elseIndex + 8); // Skip '{{else}}'
-        } else {
-          _body = fullBody;
-        }
+        final split = _splitElse(msg.value as String);
+        _body = split.key;
+        _elseBody = split.value ?? '';
         return result(context);
 
       default:
@@ -82,7 +88,8 @@ class GetIfBlockState extends TemplateState {
           err: TemplateError(
             code: errorUnsupportedNotify,
             text:
-                'State "$runtimeType" does not support notifies of type ${msg.type}',
+                'State "GetIfBlockState" does not support notifies of '
+                'type ${msg.type}',
           ),
         );
     }
@@ -90,6 +97,7 @@ class GetIfBlockState extends TemplateState {
     return null;
   }
 
+  /// Evaluates the condition and renders the appropriate block.
   TemplateResult result(TemplateContext context) {
     var res = '';
 
@@ -100,7 +108,7 @@ class GetIfBlockState extends TemplateState {
       try {
         final machine = TemplateMachine(_body);
         res = machine.run(context);
-      } catch (e) {
+      } on Exception catch (e) {
         return TemplateResult(
           err: TemplateError(
             code: errorIfBlockMalformed,
@@ -113,7 +121,7 @@ class GetIfBlockState extends TemplateState {
       try {
         final machine = TemplateMachine(_elseBody);
         res = machine.run(context);
-      } catch (e) {
+      } on Exception catch (e) {
         return TemplateResult(
           err: TemplateError(
             code: errorIfBlockMalformed,
@@ -124,5 +132,33 @@ class GetIfBlockState extends TemplateState {
     }
 
     return TemplateResult(pop: true, result: res);
+  }
+
+  MapEntry<String, String?> _splitElse(String source) {
+    var depth = 0;
+    var index = 0;
+
+    while (index < source.length) {
+      final open = source.indexOf('{{', index);
+      if (open == -1) break;
+      final close = source.indexOf('}}', open + 2);
+      if (close == -1) break;
+
+      final tagContent = source.substring(open + 2, close).trim();
+
+      if (tagContent.startsWith('#') || tagContent.startsWith('^')) {
+        depth++;
+      } else if (tagContent.startsWith('/')) {
+        if (depth > 0) depth--;
+      } else if (tagContent == 'else' && depth == 0) {
+        final before = source.substring(0, open);
+        final after = source.substring(close + 2);
+        return MapEntry(before, after);
+      }
+
+      index = close + 2;
+    }
+
+    return MapEntry(source, null);
   }
 }

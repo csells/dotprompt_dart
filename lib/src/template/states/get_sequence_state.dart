@@ -7,11 +7,15 @@ import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
 
+/// State for determining the type of template sequence (helper, block, data,
+/// etc.).
 class GetSequenceState extends TemplateState {
+  /// Creates the get sequence state.
   GetSequenceState() {
     methods = {'process': process};
   }
 
+  /// Processes the first character after {{ to determine sequence type.
   TemplateResult process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -22,6 +26,12 @@ class GetSequenceState extends TemplateState {
       res.message = NotifyMessage(
         charCode: charCode,
         type: notifyIsHelperSequence,
+      );
+    } else if (charCode == openBracket) {
+      res.pop = true;
+      res.message = NotifyMessage(
+        charCode: charCode,
+        type: notifyIsUnescapedDataSequence,
       );
     } else if (charCode == sharp) {
       res.pop = true;
@@ -45,7 +55,8 @@ class GetSequenceState extends TemplateState {
     } else if ((charCode >= 65 && charCode <= 90) ||
         (charCode >= 97 && charCode <= 122) ||
         charCode == dot ||
-        charCode == 64) { // 64 is '@'
+        charCode == 64) {
+      // 64 is '@'
       res.pop = true;
       res.message = NotifyMessage(
         charCode: charCode,

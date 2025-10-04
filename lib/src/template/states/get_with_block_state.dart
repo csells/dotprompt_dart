@@ -3,6 +3,7 @@ import '../errors_types.dart';
 import '../notify_types.dart';
 import '../template_context.dart';
 import '../template_error.dart';
+import '../template_machine.dart';
 import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
@@ -10,16 +11,23 @@ import 'close_bracket_state.dart';
 import 'get_block_end_state.dart';
 import 'get_path_state.dart';
 
+/// State for processing with blocks ({{#with path}}).
 class GetWithBlockState extends TemplateState {
+  /// Creates a new with block state.
   GetWithBlockState({required this.symbol, required this.line}) {
     methods = {'process': process, 'notify': notify};
   }
+
+  /// The column position where the block started.
   final int symbol;
+
+  /// The line number where the block started.
   final int line;
 
   String _path = '';
   String _body = '';
 
+  /// Processes characters to collect the context path.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -42,6 +50,7 @@ class GetWithBlockState extends TemplateState {
     );
   }
 
+  /// Handles notifications for path and block end.
   TemplateResult? notify(NotifyMessage msg, TemplateContext context) {
     switch (msg.type) {
       case notifyPathResult:
@@ -59,6 +68,7 @@ class GetWithBlockState extends TemplateState {
     return null;
   }
 
+  /// Executes the with block with the specified context and returns the result.
   TemplateResult result(TemplateContext context) {
     final result = TemplateResult();
 
@@ -72,26 +82,18 @@ class GetWithBlockState extends TemplateState {
         final data = context.get(_path);
 
         if (data != null) {
-          if (data is Map) {
-            final fn = context.compile(_body);
+          final childContext = context.child(data);
+          final machine = TemplateMachine(_body);
+          final rendered = machine.run(childContext);
 
-            return TemplateResult(
-              result: fn != null ? fn(data) : '',
-              pop: true,
-            );
-          } else {
-            result.err = TemplateError(
-              text: '"With" block data should have "Map" type',
-              code: errorWithDataMalformed,
-            );
-          }
+          return TemplateResult(result: rendered, pop: true);
         } else {
           result.err = TemplateError(
             text: 'Can\'t get data from context by path "$_path"',
             code: errorPathWrongSpecified,
           );
         }
-      } catch (e) {
+      } on Exception catch (e) {
         result.err = TemplateError(
           text: e.toString(),
           code: errorCallingHelper,

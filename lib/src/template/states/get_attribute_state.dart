@@ -9,11 +9,15 @@ import 'get_number_attribute.dart';
 import 'get_path_attribute.dart';
 import 'get_string_attribute.dart';
 
+/// State for processing helper attributes (strings, numbers, or paths).
 class GetAttributeState extends TemplateState {
+  /// Creates a new attribute state.
   GetAttributeState() {
     methods = {'process': process};
   }
 
+  /// Processes a character to determine attribute type and delegate to
+  /// specialized state.
   TemplateResult process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -31,7 +35,8 @@ class GetAttributeState extends TemplateState {
     } else if ((charCode >= 65 && charCode <= 90) ||
         (charCode >= 97 && charCode <= 122) ||
         charCode == 95 ||
-        charCode == 64) { // Allow @ for context variables
+        charCode == 64) {
+      // Allow @ for context variables
       return TemplateResult(
         pop: true,
         message: InitMessage(value: String.fromCharCode(charCode)),

@@ -7,14 +7,19 @@ import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
 
+/// State for processing string attributes (quoted strings).
 class GetStringAttribute extends TemplateState {
+  /// Creates a new string attribute state.
   GetStringAttribute({required this.quoteSymbol}) {
     methods = {'process': process};
   }
+
+  /// The quote character used (single or double quote).
   final int quoteSymbol;
   String _value = '';
   bool _escape = false;
 
+  /// Processes characters to build a string value, handling escape sequences.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -27,7 +32,8 @@ class GetStringAttribute extends TemplateState {
           err: TemplateError(
             code: errorStringAttributeMalformed,
             text:
-                'Wrong attribute value character "${String.fromCharCode(charCode)}"',
+                'Wrong attribute value character '
+                '"${String.fromCharCode(charCode)}"',
           ),
         );
       } else if (charCode == backSlash) {

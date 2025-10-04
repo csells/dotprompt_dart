@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../characters_consts.dart';
 import '../errors_types.dart';
 import '../notify_types.dart';
@@ -10,20 +12,39 @@ import 'close_bracket_state.dart';
 import 'get_attribute_state.dart';
 import 'get_path_state.dart';
 
+/// State for processing data variables and helper calls ({{path}} or {{helper
+/// args}}).
 class GetDataState extends TemplateState {
-  GetDataState() {
+  /// Creates a get data state with optional HTML escaping and closing brace
+  /// count.
+  GetDataState({this.escapeValues = true, this.closingBraces = 2}) {
     methods = {'init': init, 'process': process, 'notify': notify};
   }
+
+  /// Whether to HTML-escape the output value.
+  final bool escapeValues;
+
+  /// The number of closing braces expected (2 for {{...}}, 3 for {{{...}}}).
+  final int closingBraces;
+
   String _path = '';
   final List<dynamic> _attributes = [];
   bool _isHelper = false;
 
+  static const HtmlEscape _htmlEscape = HtmlEscape(HtmlEscapeMode.element);
+
+  /// Initializes the state with an optional starting path.
   TemplateResult init(InitMessage msg, TemplateContext context) {
-    final path = msg.value;
+    final path = (msg.value as String?) ?? '';
+
+    if (path.isEmpty) {
+      return TemplateResult(state: GetPathState());
+    }
 
     return TemplateResult(state: GetPathState(path: path));
   }
 
+  /// Processes characters to collect path or helper arguments.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -49,7 +70,9 @@ class GetDataState extends TemplateState {
         return null;
 
       case closeBracket:
-        return TemplateResult(state: CloseBracketState());
+        return TemplateResult(
+          state: CloseBracketState(expectedBraces: closingBraces),
+        );
 
       default:
         // If this is a helper, allow collecting attributes
@@ -68,6 +91,7 @@ class GetDataState extends TemplateState {
     }
   }
 
+  /// Handles notifications for path and attribute results.
   TemplateResult? notify(NotifyMessage msg, TemplateContext context) {
     switch (msg.type) {
       case notifyPathResult:
@@ -91,15 +115,16 @@ class GetDataState extends TemplateState {
     return null;
   }
 
+  /// Evaluates the path or helper call and returns the result string.
   String getResult(TemplateContext context) {
     var result = '';
 
-    // If this is a helper, call it
-    if (_isHelper && context.callable(_path)) {
+    // Check if this is a helper (either explicitly marked or callable)
+    if (context.callable(_path)) {
       if (_attributes.isEmpty) {
         _attributes.add(context.data);
       }
-      result = context.call(_path, _attributes, null);
+      result = context.call(_path, _attributes);
     } else {
       // Otherwise, get the data value
       final value = context.get(_path);
@@ -107,6 +132,10 @@ class GetDataState extends TemplateState {
       if (value != null) {
         result = value.toString();
       }
+    }
+
+    if (escapeValues && result.isNotEmpty) {
+      return _htmlEscape.convert(result);
     }
 
     return result;

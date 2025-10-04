@@ -7,12 +7,17 @@ import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
 
+/// State for processing block or helper names.
 class GetBlockNameState extends TemplateState {
+  /// Creates a new block name state.
   GetBlockNameState({this.name}) {
     methods = {'process': process};
   }
+
+  /// The block or helper name being parsed.
   String? name;
 
+  /// Processes characters to build the block or helper name.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -63,7 +68,8 @@ class GetBlockNameState extends TemplateState {
         err: TemplateError(
           code: errorNotAValidBlockNameChar,
           text:
-              'Character "${String.fromCharCode(charCode)}" is not a valid in block name',
+              'Character "${String.fromCharCode(charCode)}" is not a valid '
+              'in block name',
         ),
       );
     }

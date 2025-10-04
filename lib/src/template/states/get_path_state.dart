@@ -1,5 +1,6 @@
 import '../characters_consts.dart';
 import '../errors_types.dart';
+import '../helper_types.dart';
 import '../notify_types.dart';
 import '../template_context.dart';
 import '../template_error.dart';
@@ -8,14 +9,23 @@ import '../template_result.dart';
 import '../template_state.dart';
 import 'get_attribute_state.dart';
 
+/// State for processing paths (e.g., foo.bar, @index, key=value).
 class GetPathState extends TemplateState {
+  /// Creates a new path state.
   GetPathState({this.path}) {
     methods = {'process': process, 'notify': notify};
   }
+
+  /// The path being parsed.
   String? path;
-  String? _key; // For named arguments (key=value)
+
+  /// For named arguments (key=value).
+  String? _key;
+
+  /// The last character processed.
   int? lastChar;
 
+  /// Processes characters to build a path or named argument.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -43,7 +53,8 @@ class GetPathState extends TemplateState {
     } else if ((charCode >= 65 && charCode <= 90) ||
         (charCode >= 97 && charCode <= 122) ||
         charCode == 95 ||
-        charCode == 64) { // Allow @ for context variables
+        charCode == 64) {
+      // Allow @ for context variables
       path = path! + String.fromCharCode(charCode);
     } else if (charCode == equal) {
       // This is a named argument: key=value
@@ -73,7 +84,8 @@ class GetPathState extends TemplateState {
         err: TemplateError(
           code: errorNotAValidPathChar,
           text:
-              'Character "${String.fromCharCode(charCode)}" is not a valid in path',
+              'Character "${String.fromCharCode(charCode)}" is not a valid '
+              'in path',
         ),
       );
     }
@@ -83,6 +95,7 @@ class GetPathState extends TemplateState {
     return null;
   }
 
+  /// Handles attribute notification for named arguments.
   TemplateResult? notify(NotifyMessage msg, TemplateContext context) {
     switch (msg.type) {
       case notifyAttrResult:
@@ -92,7 +105,7 @@ class GetPathState extends TemplateState {
           message: NotifyMessage(
             charCode: msg.charCode,
             type: notifyPathResult,
-            value: {_key!: msg.value},
+            value: NamedArgument(_key!, msg.value),
           ),
         );
     }

@@ -7,11 +7,14 @@ import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
 
+/// State for processing the first open bracket of an expression ({{).
 class OpenBracketState extends TemplateState {
+  /// Creates the open bracket state.
   OpenBracketState() {
     methods = {'process': process};
   }
 
+  /// Processes the second open bracket to start an expression.
   TemplateResult process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
     final res = TemplateResult();
@@ -23,14 +26,13 @@ class OpenBracketState extends TemplateState {
           charCode: charCode,
           type: notifySecondOpenBracketFound,
         );
-
+        return res;
       default:
         res.err = TemplateError(
           code: errorCharNotAOpenBracket,
           text: 'Wrong character is given. Expected "{"',
         );
+        return res;
     }
-
-    return res;
   }
 }

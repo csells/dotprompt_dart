@@ -5,7 +5,9 @@ import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
 
+/// State for processing the closing tag of a block (e.g., {{/if}}).
 class GetBlockEndState extends TemplateState {
+  /// Creates a new block end state for the specified block name.
   GetBlockEndState({required this.blockName}) {
     methods = {'process': process};
 
@@ -17,6 +19,8 @@ class GetBlockEndState extends TemplateState {
     _look = '$o$o$s$blockName$c$c'; // {{/<name>}}
     _openTag = '$o$o$h$blockName';
   }
+
+  /// The name of the block being closed.
   final String blockName;
   bool _search = false;
   bool _esc = false;
@@ -27,6 +31,8 @@ class GetBlockEndState extends TemplateState {
   int _count = 0;
   int _innerOpened = 0;
 
+  /// Processes characters to find the closing block tag, handling nested
+  /// blocks.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 

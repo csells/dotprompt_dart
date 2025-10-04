@@ -7,12 +7,16 @@ import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
 
+/// State for processing comparison operators in if blocks (==, !=, <, >, <=,
+/// >=).
 class GetConditionState extends TemplateState {
+  /// Creates a new condition state.
   GetConditionState() {
     methods = {'process': process};
   }
   String _condition = '';
 
+  /// Processes characters to build the comparison operator.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -61,7 +65,8 @@ class GetConditionState extends TemplateState {
       err: TemplateError(
         code: errorGettingAttribute,
         text:
-            'Wrong condition character "${String.fromCharCode(charCode)}" ($charCode)',
+            'Wrong condition character '
+            '"${String.fromCharCode(charCode)}" ($charCode)',
       ),
     );
   }

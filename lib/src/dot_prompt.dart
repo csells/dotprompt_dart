@@ -9,6 +9,7 @@ import 'package:yaml/yaml.dart';
 
 import 'dot_prompt_front_matter.dart';
 import 'partial_resolver.dart';
+import 'template/helper_types.dart';
 import 'template/template.dart';
 import 'utility.dart';
 
@@ -73,7 +74,7 @@ class DotPrompt {
     DotPromptPartialResolver? partialResolver,
   }) : _template = Template(
          template,
-         htmlEscapeValues: false,
+         htmlEscapeValues: true,
          partialResolver: partialResolver?.resolve,
        );
 
@@ -126,9 +127,19 @@ class DotPrompt {
 
   final Template _template;
 
+  /// Registers a custom helper available to this prompt instance.
+  void registerHelper(String name, TemplateHelper helper) {
+    _template.registerHelper(name, helper);
+  }
+
   /// Renders the template with the given input data.
   /// Throws [ValidationException] if the input data fails schema validation.
-  String render([Map<String, dynamic> input = const {}]) {
+  String render({
+    Map<String, dynamic> input = const {},
+    List<Map<String, dynamic>> messages = const [],
+    dynamic docs,
+    Map<String, dynamic>? context,
+  }) {
     // Merge defaults with input, letting input override defaults
     final mergedInput = Map<String, dynamic>.from(frontMatter.input.defaults);
     mergedInput.addAll(input);
@@ -144,6 +155,24 @@ class DotPrompt {
       }
     }
 
-    return _template.renderString(mergedInput);
+    final metadata = {
+      'prompt': frontMatter.toMetadata(),
+      'docs': docs ?? frontMatter.metadata['docs'] ?? const [],
+      'messages': List<Map<String, dynamic>>.from(messages),
+    };
+
+    final atVariables = <String, dynamic>{};
+    if (context != null) {
+      for (final entry in context.entries) {
+        final key = entry.key.startsWith('@') ? entry.key : '@${entry.key}';
+        atVariables[key] = entry.value;
+      }
+    }
+
+    return _template.renderString(
+      mergedInput,
+      metadata: metadata,
+      contextVariables: atVariables,
+    );
   }
 }

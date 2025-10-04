@@ -1,66 +1,102 @@
 import 'dart:convert';
 
+import 'helper_types.dart';
+
 /// Built-in helpers for dotprompt template spec
 /// https://google.github.io/dotprompt/reference/template/
 
-/// JSON helper - serializes a value to JSON
-String jsonHelper(List<dynamic> attributes, Function? fn) {
-  if (attributes.isEmpty) return '{}';
-
-  final value = attributes[0];
+/// JSON helper - serializes a value to JSON.
+String jsonHelper(HelperInvocation invocation) {
+  if (invocation.positionalArgs.isEmpty) return '{}';
+  final value = invocation.firstPositional;
   return jsonEncode(value);
 }
 
-/// Role helper - marks the beginning of a message with a specific role
-/// In dotprompt, this is used for multi-message prompts
-/// For now, we just skip it and render the content after it
-String roleHelper(List<dynamic> attributes, Function? fn) {
-  // The role helper doesn't produce output itself
-  // It's a structural marker for message boundaries
-  return '';
-}
+/// Role helper - marks the beginning of a message with a specific role.
+/// The helper is structural and does not emit content.
+String roleHelper(HelperInvocation invocation) => '';
 
-/// History helper - inserts conversation history
-/// For now, returns empty string as we need to integrate with message context
-String historyHelper(List<dynamic> attributes, Function? fn) {
-  // TODO: Integrate with message history from context
-  return '';
-}
+/// History helper - inserts conversation history using existing helpers.
+String historyHelper(HelperInvocation invocation) {
+  final context = invocation.context;
+  final messages = context.metadata['messages'];
 
-/// Media helper - inserts media content
-/// Returns the media URL or reference
-String mediaHelper(List<dynamic> attributes, Function? fn) {
-  // Extract url from named arguments
-  // Attributes come in as a list, where named args are in a Map
-  if (attributes.isEmpty) return '';
+  if (messages is! List) return '';
+  if (messages.isEmpty) return '';
 
-  // Look for url in named arguments
-  for (final attr in attributes) {
-    if (attr is Map && attr.containsKey('url')) {
-      final urlValue = attr['url'];
-      // If it's a string, return it directly; otherwise convert to string
-      return urlValue.toString();
+  final buffer = StringBuffer();
+  var isFirst = true;
+
+  for (final message in messages) {
+    if (message is! Map) continue;
+
+    final role = message['role'];
+    final content = message['content'];
+
+    if (role != null) {
+      context.call('role', [role.toString()]);
+    }
+
+    if (content == null) continue;
+
+    if (!isFirst) {
+      buffer.writeln();
+    }
+    isFirst = false;
+
+    if (content is List) {
+      var firstSegment = true;
+      for (final segment in content) {
+        final segmentText = _contentSegmentToString(segment);
+        if (segmentText == null) continue;
+        if (!firstSegment) {
+          buffer.writeln();
+        }
+        firstSegment = false;
+        buffer.write(segmentText);
+      }
+    } else {
+      buffer.write(content.toString());
     }
   }
 
-  return '';
+  return buffer.toString();
 }
 
-/// Section helper - marks content positioning
-/// For now, just returns empty string as it's a structural marker
-String sectionHelper(List<dynamic> attributes, Function? fn) {
-  // The section helper is a structural marker
-  // It doesn't produce output itself
-  return '';
+/// Media helper - inserts media content. Returns textual representation.
+String mediaHelper(HelperInvocation invocation) {
+  final url = invocation.named('url') ?? invocation.firstPositional;
+  if (url == null) return '';
+  return url.toString();
 }
 
-/// Returns a map of all built-in helpers
-Map<String, Function(List<dynamic>, Function?)> getBuiltInHelpers() {
-  return {
-    'json': jsonHelper,
-    'role': roleHelper,
-    'history': historyHelper,
-    'media': mediaHelper,
-    'section': sectionHelper,
-  };
+/// Section helper - structural marker used for section ordering.
+String sectionHelper(HelperInvocation invocation) => '';
+
+String? _contentSegmentToString(dynamic segment) {
+  if (segment is String) return segment;
+  if (segment is Map) {
+    final type = segment['type'];
+    if (type == 'text' && segment['text'] != null) {
+      return segment['text'].toString();
+    }
+    if ((type == 'media' || type == 'image') && segment['url'] != null) {
+      return segment['url'].toString();
+    }
+    if (segment['content'] != null) {
+      return segment['content'].toString();
+    }
+  }
+
+  if (segment == null) return null;
+  return segment.toString();
 }
+
+/// Returns a map of all built-in helpers.
+Map<String, TemplateHelper> getBuiltInHelpers() => {
+  'json': jsonHelper,
+  'role': roleHelper,
+  'history': historyHelper,
+  'media': mediaHelper,
+  'section': sectionHelper,
+};

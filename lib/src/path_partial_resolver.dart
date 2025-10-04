@@ -9,7 +9,7 @@ import 'partial_resolver.dart';
 class PathPartialResolver implements DotPromptPartialResolver {
   /// Creates a new instance of [PathPartialResolver].
   PathPartialResolver(List<Directory> partialPaths)
-      : _partialPaths = partialPaths;
+    : _partialPaths = partialPaths;
 
   final List<Directory> _partialPaths;
 

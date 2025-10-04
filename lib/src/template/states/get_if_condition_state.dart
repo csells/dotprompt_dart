@@ -9,16 +9,25 @@ import '../template_state.dart';
 import 'get_attribute_state.dart';
 import 'get_condition_state.dart';
 
+/// State for processing if block conditions (leftPart [operator rightPart]).
 class GetIfConditionState extends TemplateState {
+  /// Creates a new if condition state.
   GetIfConditionState() {
     methods = {'process': process, 'notify': notify};
   }
+
+  /// The left operand of the condition.
   dynamic leftPart;
+
+  /// The right operand of the condition.
   dynamic rightPart;
+
+  /// The comparison operator (==, !=, <, >, <=, >=).
   String? condition;
 
   int _state = 0;
 
+  /// Processes characters to collect condition parts.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 
@@ -30,7 +39,8 @@ class GetIfConditionState extends TemplateState {
         ),
       );
     } else if (charCode == closeBracket) {
-      // If we have leftPart (even if null), that's valid - it's a simple truthy check
+      // If we have leftPart (even if null), that's valid - it's a simple truthy
+      // check
       if (_state >= 1) {
         return TemplateResult(
           pop: true,
@@ -75,6 +85,7 @@ class GetIfConditionState extends TemplateState {
     }
   }
 
+  /// Handles notifications for condition parts.
   TemplateResult? notify(NotifyMessage msg, TemplateContext context) {
     switch (msg.type) {
       case notifyAttrResult:
@@ -123,7 +134,8 @@ class GetIfConditionState extends TemplateState {
           err: TemplateError(
             code: errorUnsupportedNotify,
             text:
-                'State "$runtimeType" does not support notifies of type ${msg.type}',
+                'State "GetIfConditionState" does not support notifies of '
+                'type ${msg.type}',
           ),
         );
     }
@@ -131,6 +143,7 @@ class GetIfConditionState extends TemplateState {
     return null;
   }
 
+  /// Evaluates the condition based on the operator and operands.
   bool checkCondition() {
     // If no condition operator, just check truthiness of leftPart
     if (condition == null) {
@@ -140,12 +153,16 @@ class GetIfConditionState extends TemplateState {
     // Otherwise, perform comparison
     switch (condition) {
       case '<':
+        // ignore: avoid_dynamic_calls
         return leftPart < rightPart;
       case '<=':
+        // ignore: avoid_dynamic_calls
         return leftPart <= rightPart;
       case '>':
+        // ignore: avoid_dynamic_calls
         return leftPart > rightPart;
       case '>=':
+        // ignore: avoid_dynamic_calls
         return leftPart >= rightPart;
       case '==':
         return leftPart == rightPart;

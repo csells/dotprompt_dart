@@ -11,7 +11,7 @@ void main() async {
     name: filename,
   );
   final front = prompt.frontMatter; // the model info, settings, etc.
-  final result = prompt.render({'name': 'Chris'});
+  final result = prompt.render(input: {'name': 'Chris'});
 
   print('\n# Front Matter');
   print(front);

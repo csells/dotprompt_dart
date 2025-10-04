@@ -7,12 +7,17 @@ import '../template_messages.dart';
 import '../template_result.dart';
 import '../template_state.dart';
 
+/// State for processing numeric attributes.
 class GetNumberAttribute extends TemplateState {
+  /// Creates a new number attribute state.
   GetNumberAttribute({this.value}) {
     methods = {'process': process};
   }
+
+  /// The numeric value being parsed.
   String? value;
 
+  /// Processes characters to build a numeric value.
   TemplateResult? process(ProcessMessage msg, TemplateContext context) {
     final charCode = msg.charCode;
 

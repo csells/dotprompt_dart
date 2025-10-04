@@ -55,15 +55,53 @@ plug‑in, non‑Dart runtimes.
 * **Note:** YAML parsing should handle nested structures (e.g., `YamlMap` and `YamlList`) and convert them to `Map<String, dynamic>`.
 
 ### Template Engine
-* Use a Handlebars‑compatible renderer and expose the Dotprompt‑required
-  helpers: `json`, `role`, `history`, `media`, `section`, matching the [template
-  spec](https://google.github.io/dotprompt/reference/template/).
-* The content can be parsed using the
-  [mustache_template](https://pub.dev/packages/mustache_template) package.
-* Allow registration of custom helpers at runtime; retain full fidelity with
-  Handlebars blocks and partials.
+* **Custom Handlebars-compatible implementation** built from scratch in `lib/src/template/`
+* **MUST achieve 100% spec compliance** with the [template spec](https://google.github.io/dotprompt/reference/template/)
+* State machine-based parser in `template_machine.dart` for robust template processing
+* Full support for Handlebars syntax including blocks, helpers, partials, and context variables
+* Allow registration of custom helpers at runtime with full access to context and block content
+* Comprehensive test suite ensuring every spec feature is validated
 
 #### Implemented Features (v0.4.0)
+
+**Core Template Syntax:**
+* Variable interpolation: `{{variable}}`
+* Nested property access: `{{object.property}}`
+* HTML escaping by default: `{{variable}}` escapes, `{{{variable}}}` does not
+* Escaped literal output: `\{{variable}}` renders as `{{variable}}`
+
+**Built-in Helpers ([spec](https://google.github.io/dotprompt/reference/template/#built-in-helpers)):**
+* `#if` conditional blocks with `else` support
+* `#unless` inverted conditional blocks
+* `#each` iteration over arrays and objects
+  * `@index` - current iteration index
+  * `@first` - true for first item
+  * `@last` - true for last item
+  * `@key` - property name when iterating objects
+* `#with` context switching helper
+
+**Dotprompt Helpers ([spec](https://google.github.io/dotprompt/reference/template/#dotprompt-helpers)):**
+* `json` - serialize variables to JSON
+* `role` - structural marker for multi-message prompts
+* `history` - insert conversation history
+* `media` - insert media content references
+* `section` - structural marker for content positioning
+
+**Custom Helpers ([spec](https://google.github.io/dotprompt/reference/template/#custom-helpers)):**
+* Register via `registerHelper(name, function)`
+* Support for positional arguments
+* Support for named arguments
+* Block helpers with `block()` and `inverse()` callbacks
+* Full context access via `HelperInvocation.context`
+* Error propagation for validation
+
+**Context Variables ([spec](https://google.github.io/dotprompt/reference/template/#context-variables)):**
+* `@root` - reference to root context from any depth
+* `@metadata` - access to prompt configuration and messages
+* `@metadata.prompt` - prompt front-matter
+* `@metadata.messages` - conversation history
+* `@metadata.docs` - document context
+* Custom `@` variables via `context` parameter in `render()`
 
 **Partials Support:**
 * Abstract class `DotPromptPartialResolver` for resolving partial templates
@@ -73,35 +111,27 @@ plug‑in, non‑Dart runtimes.
 * Strips front-matter from `.prompt` partials automatically
 * Web-compatible architecture (custom resolvers can be implemented for web platforms)
 * Use syntax: `{{> partialName }}` in templates
+* Partials inherit parent context
+* Partials can be scoped: `{{> partialName scopedData }}`
 
-#### Planned Features
+#### Known Gaps for 100% Spec Compliance
 
-The following template features are not yet implemented but planned for future releases:
+The following Handlebars features from the spec are NOT yet implemented and MUST be addressed:
+* Comment syntax `{{!-- --}}` (parser currently rejects `!` as invalid character)
+* Whitespace control with `~` (e.g., `{{~#if}}`, `{{/if~}}`)
+* Inline partials `{{#*inline "name"}}...{{/inline}}`
+* Block parameters `{{#each items as |item index|}}`
+* Hash arguments in partials `{{> partial name=value}}`
+* `else if` chains - currently requires nested `#if`, spec may support `{{else if}}`
+* Subexpressions `{{outer (inner)}}`
+* `../` parent context navigation
+* Literal segments `{{[special chars]}}`
 
-1. Built-in Helpers ([spec](https://google.github.io/dotprompt/reference/template/#built-in-helpers)):
-   * `#if` conditional blocks
-   * `else` blocks
-   * `#unless` blocks
-   * `#each` iteration with `@index`, `@first`, `@last` support
-
-2. Dotprompt Helpers ([spec](https://google.github.io/dotprompt/reference/template/#dotprompt-helpers)):
-   * `json` helper for JSON serialization
-   * `role` helper for multi-message prompts
-   * `history` helper for conversation context
-   * `media` helper for image content
-   * `section` helper for content positioning
-
-3. Custom Helpers ([spec](https://google.github.io/dotprompt/reference/template/#custom-helpers)):
-   * Basic helpers with positional args
-   * Named argument support
-   * Block helpers
-   * Context access
-   * Error handling
-
-4. Context Variables ([spec](https://google.github.io/dotprompt/reference/template/#context-variables)):
-   * `@metadata` access to prompt configuration
-   * `@root` context reference
-   * Message history access via `@metadata.messages`
+**Test Coverage Requirements:**
+* Every spec feature MUST have explicit test coverage
+* Tests MUST validate both success and error cases
+* Tests MUST cover edge cases (empty arrays, null values, missing properties, etc.)
+* Tests MUST validate error messages are helpful and accurate
 
 ### Execution Model  
 * Convert parsed prompt into a `GenerateRequest` object matching the [model
@@ -153,9 +183,10 @@ These calls perform schema validation, template rendering (with optional partial
 * **Researcher**: "I rapidly A/B test temperature settings from the CLI without
   rewriting code."  
 
-### Architecture & Dependencies  
-* **Packages**: `yaml`, `json_schema`, `fbh_front_matter`, `mustache_template`,
-  `build_runner` (future), `source_gen` (future)  
+### Architecture & Dependencies
+* **Packages**: `yaml`, `json_schema`, `path`, `collection`
+  * `build_runner` (future), `source_gen` (future)
+* **NO external template library** - custom implementation in `lib/src/template/`  
 
 ### References  
 * [Dotprompt – Getting Started](https://google.github.io/dotprompt/getting-started/)  

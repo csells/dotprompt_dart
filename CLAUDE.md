@@ -79,7 +79,28 @@ dart pub publish
 
 ### Template System
 
-Uses [mustache_template](https://pub.dev/packages/mustache_template) package for template expansion. NOT fully spec-compliant with Google's Handlebars implementation - see README.md "Handlebar Implementation Shortcomings" section for known limitations.
+**Custom Handlebars-compatible implementation** in [lib/src/template/](lib/src/template/):
+- State machine-based parser ([template_machine.dart](lib/src/template/template_machine.dart))
+- Complete implementation of Handlebars syntax (variables, helpers, blocks, partials)
+- **Goal: 100% spec compliance** with [dotprompt template spec](https://google.github.io/dotprompt/reference/template/)
+- Built-in helpers: `#if`, `#unless`, `#each`, `#with`
+- Dotprompt helpers: `json`, `role`, `history`, `media`, `section`
+- Custom helper registration with full context access via `registerHelper()`
+- Context variables: `@root`, `@metadata`, `@index`, `@first`, `@last`, `@key`
+- Partials support via `DotPromptPartialResolver` (see [path_partial_resolver.dart](lib/src/path_partial_resolver.dart))
+
+**Known gaps for 100% compliance** (see [PRD.md](PRD.md) "Known Gaps" section):
+- Comments `{{!-- --}}`
+- Whitespace control `~`
+- Inline partials, block parameters, subexpressions
+- Parent context navigation `../`
+
+**CRITICAL Testing Requirement**:
+- **Every spec feature MUST have comprehensive test coverage**
+- Tests MUST validate both success and error cases
+- Tests MUST cover edge cases (empty arrays, null values, missing properties)
+- Tests MUST validate error messages are helpful and accurate
+- Template tests are in [test/template_content_test.dart](test/template_content_test.dart)
 
 ### Web/WASM Compatibility
 
@@ -109,10 +130,20 @@ Version 0.3.0+ replaced `DotPrompt.file(filename)` with `DotPrompt.stream(bytes,
 
 - `json_schema`: ^5.2.1 - JSON Schema validation
 - `yaml`: ^3.1.2 - YAML front-matter parsing
-- `mustache_template`: ^2.0.0 - Template expansion
 - `path`: ^1.8.0 - Path manipulation
 - `collection`: ^1.19.1 - Collection utilities
+- **NO external template library** - custom implementation in `lib/src/template/`
 
 ## Testing Philosophy
 
-Tests are comprehensive with 100+ tests focused on Pico Schema conversion. Tests should be silent on success and report failures via `expect()`. No print statements except for diagnostics (which should be removed before commit).
+Tests are comprehensive with:
+- 100+ tests for Pico Schema conversion ([test/pico_schema_test.dart](test/pico_schema_test.dart))
+- Comprehensive template tests ([test/template_content_test.dart](test/template_content_test.dart))
+- **MUST achieve 100% coverage of template spec features**
+
+Tests should be:
+- Silent on success, report failures via `expect()`
+- No print statements except for diagnostics (which should be removed before commit)
+- Cover both success and error cases
+- Test edge cases thoroughly
+- Validate error messages are helpful

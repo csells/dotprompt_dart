@@ -30,10 +30,7 @@ Hello from the prompt partial!
       final template = resolver.resolve('my_partial');
 
       expect(template, isNotNull);
-      expect(
-        template,
-        equals('Hello from the prompt partial!'),
-      );
+      expect(template, equals('Hello from the prompt partial!'));
     });
 
     test('resolves .mustache partial', () {
@@ -45,10 +42,7 @@ Hello from the prompt partial!
       final template = resolver.resolve('my_partial');
 
       expect(template, isNotNull);
-      expect(
-        template,
-        equals('Hello from the mustache partial!'),
-      );
+      expect(template, equals('Hello from the mustache partial!'));
     });
 
     test('returns null for non-existent partial', () {
@@ -73,7 +67,7 @@ Partial content.
 
       final resolver = PathPartialResolver([partialsDir]);
       final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
-      final output = prompt.render({}).trim();
+      final output = prompt.render(input: {}).trim();
 
       expect(output, equals('Main content: Partial content.'));
     });
@@ -99,7 +93,7 @@ Stream partial.
         name: mainPromptFile.path,
         partialResolver: resolver,
       );
-      final output = prompt.render({}).trim();
+      final output = prompt.render(input: {}).trim();
 
       expect(output, equals('Stream content: Stream partial.'));
     });
@@ -113,7 +107,7 @@ Stream partial.
 
       final resolver = PathPartialResolver([partialsDir]);
       final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
-      final output = prompt.render({}).trim();
+      final output = prompt.render(input: {}).trim();
 
       expect(output, equals('Main: P1: P2'));
     });
@@ -130,9 +124,93 @@ This is the actual template content.
 
       final resolver = PathPartialResolver([partialsDir]);
       final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
-      final output = prompt.render({}).trim();
+      final output = prompt.render(input: {}).trim();
 
       expect(output, equals('Main: This is the actual template content.'));
+    });
+
+    test('partial with context from parent', () {
+      const mainPromptContent = '''
+---
+name: main
+input:
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+---
+{{> greeting }}
+''';
+      File('${partialsDir.path}/_greeting.prompt').writeAsStringSync('''
+Hello, {{name}}!
+''');
+
+      final resolver = PathPartialResolver([partialsDir]);
+      final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
+      final output = prompt.render(input: {'name': 'Alice'}).trim();
+
+      expect(output, equals('Hello, Alice!'));
+    });
+
+    test('partial with scoped context', () {
+      const mainPromptContent = '''
+---
+name: main
+input:
+  schema:
+    type: object
+    properties:
+      user:
+        type: object
+---
+{{> user_details user }}
+''';
+      File('${partialsDir.path}/_user_details.prompt').writeAsStringSync('''
+Name: {{name}}, Email: {{email}}
+''');
+
+      final resolver = PathPartialResolver([partialsDir]);
+      final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
+      final output = prompt.render(
+        input: {
+          'user': {'name': 'Bob', 'email': 'bob@example.com'},
+        },
+      ).trim();
+
+      expect(output, equals('Name: Bob, Email: bob@example.com'));
+    });
+
+    test('partial in iteration', () {
+      const mainPromptContent = '''
+---
+name: main
+input:
+  schema:
+    type: object
+    properties:
+      users:
+        type: array
+---
+{{#each users}}{{> user_item }}{{/each}}
+''';
+      File('${partialsDir.path}/_user_item.prompt').writeAsStringSync('''
+User: {{name}}
+''');
+
+      final resolver = PathPartialResolver([partialsDir]);
+      final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
+      final output = prompt.render(
+        input: {
+          'users': [
+            {'name': 'Alice'},
+            {'name': 'Bob'},
+          ],
+        },
+      ).trim();
+
+      expect(output, contains('User: Alice'));
+      expect(output, contains('User: Bob'));
     });
   });
 }

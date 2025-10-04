@@ -7,3 +7,5 @@
 library;
 
 export 'src/dot_prompt.dart';
+export 'src/template/helper_types.dart'
+    show BlockRenderer, HelperInvocation, TemplateHelper;
