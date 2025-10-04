@@ -126,6 +126,29 @@ City: {{address.city}}''';
         );
         expect(output, equals('City: San Francisco'));
       });
+
+      test('dot expression references current value', () {
+        const promptString = '''
+---
+name: test_dot_expression
+input:
+  schema:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          type: string
+---
+{{#each items}}[{{.}}]{{/each}}''';
+        final dotPrompt = DotPrompt(promptString);
+        final output = dotPrompt.render(
+          input: {
+            'items': ['alpha', 'beta'],
+          },
+        );
+        expect(output, equals('[alpha][beta]'));
+      });
     });
 
     group('Built-in Helpers', () {
@@ -427,6 +450,50 @@ What was my last question about?''';
         final output = dotPrompt.render(input: {}, messages: messages);
         expect(output, contains('Tell me about Paris.'));
         expect(output, contains('Paris is the capital of France.'));
+      });
+
+      test('history helper handles segmented content', () {
+        const promptString = '''
+---
+name: test_history_segments
+input:
+  schema:
+    type: object
+---
+Conversation log:
+{{history}}
+Done.''';
+        final dotPrompt = DotPrompt(promptString);
+        final messages = [
+          {
+            'role': 'user',
+            'content': [
+              {'type': 'text', 'text': 'Describe this request'},
+              {'type': 'image', 'url': 'https://example.com/image.png'},
+            ],
+          },
+          {
+            'role': 'assistant',
+            'content': [
+              {'type': 'text', 'text': 'Here is what I noticed.'},
+            ],
+          },
+        ];
+
+        final output = dotPrompt.render(input: const {}, messages: messages);
+
+        expect(output, contains('Conversation log:\nDescribe this request'));
+        expect(output, contains('https://example.com/image.png'));
+        expect(output, contains('Here is what I noticed.'));
+        expect(
+          output.indexOf('Describe this request'),
+          lessThan(output.indexOf('https://example.com/image.png')),
+        );
+        expect(
+          output.indexOf('https://example.com/image.png'),
+          lessThan(output.indexOf('Here is what I noticed.')),
+        );
+        expect(output.trim().endsWith('Done.'), isTrue);
       });
 
       test('media helper for image content', () {

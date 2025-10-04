@@ -172,11 +172,14 @@ Name: {{name}}, Email: {{email}}
 
       final resolver = PathPartialResolver([partialsDir]);
       final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
-      final output = prompt.render(
-        input: {
-          'user': {'name': 'Bob', 'email': 'bob@example.com'},
-        },
-      ).trim();
+      final output =
+          prompt
+              .render(
+                input: {
+                  'user': {'name': 'Bob', 'email': 'bob@example.com'},
+                },
+              )
+              .trim();
 
       expect(output, equals('Name: Bob, Email: bob@example.com'));
     });
@@ -200,17 +203,82 @@ User: {{name}}
 
       final resolver = PathPartialResolver([partialsDir]);
       final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
-      final output = prompt.render(
-        input: {
-          'users': [
-            {'name': 'Alice'},
-            {'name': 'Bob'},
-          ],
-        },
-      ).trim();
+      final output =
+          prompt
+              .render(
+                input: {
+                  'users': [
+                    {'name': 'Alice'},
+                    {'name': 'Bob'},
+                  ],
+                },
+              )
+              .trim();
 
       expect(output, contains('User: Alice'));
       expect(output, contains('User: Bob'));
+    });
+
+    test('partial merges named arguments with base context', () {
+      const mainPromptContent = '''
+---
+name: main
+input:
+  schema:
+    type: object
+    properties:
+      user:
+        type: object
+---
+{{> badge user style="primary"}}
+''';
+      File('${partialsDir.path}/_badge.prompt').writeAsStringSync('''
+Badge: {{style}} {{name}}
+''');
+
+      final resolver = PathPartialResolver([partialsDir]);
+      final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
+      final output =
+          prompt
+              .render(
+                input: {
+                  'user': {'name': 'Alice'},
+                },
+              )
+              .trim();
+
+      expect(output, equals('Badge: primary Alice'));
+    });
+
+    test('partial accepts explicit this parameter', () {
+      const mainPromptContent = '''
+---
+name: main
+input:
+  schema:
+    type: object
+    properties:
+      tags:
+        type: array
+        items:
+          type: string
+---
+{{#each tags}}- {{> tag_item this }}\n{{/each}}
+''';
+      File('${partialsDir.path}/_tag_item.prompt').writeAsStringSync('''
+Tag: {{.}}
+''');
+
+      final resolver = PathPartialResolver([partialsDir]);
+      final prompt = DotPrompt(mainPromptContent, partialResolver: resolver);
+      final output = prompt.render(
+        input: {
+          'tags': ['important', 'urgent'],
+        },
+      );
+
+      expect(output, contains('Tag: important'));
+      expect(output, contains('Tag: urgent'));
     });
   });
 }
