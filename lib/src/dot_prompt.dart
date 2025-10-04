@@ -1,4 +1,5 @@
-/// @docImport 'path_partial_resolver.dart';
+/// dotprompt_dart is the Dart implementation of the dotprompt specification,
+/// which provides an executable prompt template file format for Generative AI.
 library;
 
 import 'dart:async';
@@ -34,7 +35,7 @@ class DotPrompt {
   /// Loads a .prompt from a string content.
   ///
   /// Takes an optional [partialResolver] which can resolve dotprompt partial
-  /// files. Supply a [PathPartialResolver] in applications that can use
+  /// files. Supply a path-based partial resolver in applications that can use
   /// dart:io.
   factory DotPrompt(
     String content, {
