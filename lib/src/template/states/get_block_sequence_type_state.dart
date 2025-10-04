@@ -90,7 +90,8 @@ class GetBlockSequenceTypeState extends TemplateState {
     return TemplateResult(
       err: TemplateError(
         code: errorUnsupportedNotify,
-        text: 'State "GetBlockSequenceTypeState" does not support '
+        text:
+            'State "GetBlockSequenceTypeState" does not support '
             'notifies of type ${msg.type}',
       ),
     );
