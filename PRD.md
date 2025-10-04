@@ -74,11 +74,8 @@ plug‑in, non‑Dart runtimes.
 * `#if` conditional blocks with `else` support
 * `#unless` inverted conditional blocks
 * `#each` iteration over arrays and objects
-  * `@index` - current iteration index
-  * `@first` - true for first item
-  * `@last` - true for last item
-  * `@key` - property name when iterating objects
-* `#with` context switching helper
+  * `this` - current item reference
+  * `@index` - current iteration index (context variable)
 
 **Dotprompt Helpers ([spec](https://google.github.io/dotprompt/reference/template/#dotprompt-helpers)):**
 * `json` - serialize variables to JSON
@@ -97,35 +94,29 @@ plug‑in, non‑Dart runtimes.
 
 **Context Variables ([spec](https://google.github.io/dotprompt/reference/template/#context-variables)):**
 * `@root` - reference to root context from any depth
+* `@first` - true for first item in iteration
+* `@last` - true for last item in iteration
+* `@key` - property name when iterating objects
 * `@metadata` - access to prompt configuration and messages
-* `@metadata.prompt` - prompt front-matter
-* `@metadata.messages` - conversation history
-* `@metadata.docs` - document context
+  * `@metadata.prompt` - prompt front-matter
+  * `@metadata.messages` - conversation history
+  * `@metadata.docs` - document context
 * Custom `@` variables via `context` parameter in `render()`
 
-**Partials Support:**
+**Partials Support ([spec](https://google.github.io/dotprompt/reference/template/#partials)):**
 * Abstract class `DotPromptPartialResolver` for resolving partial templates
 * `PathPartialResolver` implementation for applications with `dart:io` access
 * Searches for partials with naming conventions: `_partialName.prompt` or `_partialName.mustache`
 * Supports multiple directory search paths
 * Strips front-matter from `.prompt` partials automatically
 * Web-compatible architecture (custom resolvers can be implemented for web platforms)
-* Use syntax: `{{> partialName }}` in templates
+* Basic syntax: `{{> partialName }}`
+* With arguments: `{{> partialName arg1=value1 arg2=value2 }}`
+* With context: `{{> partialName this }}`
 * Partials inherit parent context
-* Partials can be scoped: `{{> partialName scopedData }}`
 
-#### Known Gaps for 100% Spec Compliance
-
-The following Handlebars features from the spec are NOT yet implemented and MUST be addressed:
-* Comment syntax `{{!-- --}}` (parser currently rejects `!` as invalid character)
-* Whitespace control with `~` (e.g., `{{~#if}}`, `{{/if~}}`)
-* Inline partials `{{#*inline "name"}}...{{/inline}}`
-* Block parameters `{{#each items as |item index|}}`
-* Hash arguments in partials `{{> partial name=value}}`
-* `else if` chains - currently requires nested `#if`, spec may support `{{else if}}`
-* Subexpressions `{{outer (inner)}}`
-* `../` parent context navigation
-* Literal segments `{{[special chars]}}`
+**Implementation Status:**
+All features from the [dotprompt template spec](https://google.github.io/dotprompt/reference/template/) are implemented. The implementation does not include additional Handlebars features beyond what the spec requires.
 
 **Test Coverage Requirements:**
 * Every spec feature MUST have explicit test coverage
